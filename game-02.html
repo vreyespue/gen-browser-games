@@ -38,11 +38,19 @@
 
         // Update the game state
         function update() {
-            // Move player left or right
+            // Horizontal: Move player left or right
             if (keys["ArrowRight"]) player.x += player.speed;
             if (keys["ArrowLeft"]) player.x -= player.speed;
             
-            // Apply gravity
+            // Prevent the player from moving off the left or right side of the canvas
+            if (player.x < 0) {
+                player.x = 0;
+            }
+            if (player.x + player.width > canvas.width) {
+                player.x = canvas.width - player.width;
+            }
+
+            // Vertical: Apply gravity
             player.dy += player.gravity;
             player.y += player.dy;
             player.onGround = false;
@@ -66,14 +74,6 @@
                 player.y = canvas.height - player.height;
                 player.dy = 0;
                 player.onGround = true;
-            }
-
-            // Prevent the player from moving off the left or right side of the canvas
-            if (player.x < 0) {
-                player.x = 0;
-            }
-            if (player.x + player.width > canvas.width) {
-                player.x = canvas.width - player.width;
             }
 
             // Make the player jump if on the ground and ArrowUp is pressed
