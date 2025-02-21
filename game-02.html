@@ -61,18 +61,19 @@
                 }
             });
             
-            // Make the player jump if on the ground and ArrowUp is pressed
-            if (keys["ArrowUp"] && player.onGround) {
-                player.dy = player.jumpPower;
-                player.onGround = false;
-            }
-
             // Prevent the player from falling through the bottom of the canvas
             if (player.y + player.height > canvas.height) {
                 player.y = canvas.height - player.height;
                 player.dy = 0;
                 player.onGround = true;
             }
+
+            // Make the player jump if on the ground and ArrowUp is pressed
+            if (keys["ArrowUp"] && player.onGround) {
+                player.dy = player.jumpPower;
+                player.onGround = false;
+            }
+
         }
 
         // Draw the game elements
