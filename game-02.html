@@ -53,7 +53,7 @@
                 }
             });
             
-            if (keys["ArrowUp"]) {
+            if (keys["ArrowUp"] && player.onGround) {
                 player.dy = player.jumpPower;
                 player.onGround = false;
             }
