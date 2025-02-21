@@ -68,6 +68,14 @@
                 player.onGround = true;
             }
 
+            // Prevent the player from moving off the left or right side of the canvas
+            if (player.x < 0) {
+                player.x = 0;
+            }
+            if (player.x + player.width > canvas.width) {
+                player.x = canvas.width - player.width;
+            }
+
             // Make the player jump if on the ground and ArrowUp is pressed
             if (keys["ArrowUp"] && player.onGround) {
                 player.dy = player.jumpPower;
