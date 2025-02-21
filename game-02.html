@@ -13,33 +13,41 @@
     <h1>Simple Platformer</h1>
     <canvas id="gameCanvas" width="600" height="400"></canvas>
     <script>
+        // Get the canvas and context
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
+        // Define the player object
         const player = {
             x: 50, y: 300, width: 30, height: 30,
             color: "red", speed: 5, dy: 0.5, gravity: 0.5, jumpPower: -10,
             onGround: false
         };
 
+        // Define the platforms
         const platforms = [
             { x: 50, y: 350, width: 200, height: 10 },
             { x: 300, y: 280, width: 200, height: 10 },
             { x: 150, y: 200, width: 150, height: 10 }
         ];
 
+        // Track key presses
         const keys = {};
         window.addEventListener("keydown", e => keys[e.code] = true);
         window.addEventListener("keyup", e => keys[e.code] = false);
 
+        // Update the game state
         function update() {
+            // Move player left or right
             if (keys["ArrowRight"]) player.x += player.speed;
             if (keys["ArrowLeft"]) player.x -= player.speed;
             
+            // Apply gravity
             player.dy += player.gravity;
             player.y += player.dy;
             player.onGround = false;
 
+            // Check for collisions with platforms
             platforms.forEach(platform => {
                 if (
                     player.x < platform.x + platform.width &&
@@ -53,11 +61,13 @@
                 }
             });
             
+            // Make the player jump if on the ground and ArrowUp is pressed
             if (keys["ArrowUp"] && player.onGround) {
                 player.dy = player.jumpPower;
                 player.onGround = false;
             }
 
+            // Prevent the player from falling through the bottom of the canvas
             if (player.y + player.height > canvas.height) {
                 player.y = canvas.height - player.height;
                 player.dy = 0;
@@ -65,6 +75,7 @@
             }
         }
 
+        // Draw the game elements
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = player.color;
@@ -76,8 +87,9 @@
             });
         }
 
+        // Main game loop
         function gameLoop() {
-            // copilot: wait for 16.67ms (60 frames per second)
+            // Wait for 16.67ms (60 frames per second)
             window.setTimeout(() => {
                 update();
                 draw();
@@ -85,6 +97,7 @@
             }, 1000 / 60);
         }
 
+        // Start the game loop
         gameLoop();
     </script>
 </body>
