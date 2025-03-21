@@ -16,9 +16,10 @@
         #box {
             width: 50px;
             height: 50px;
-            background-color: red;
             position: absolute;
             cursor: pointer;
+            background-position: center;
+            background-repeat: no-repeat;
         }
     </style>
 </head>
@@ -37,13 +38,25 @@
         const box = document.getElementById("box");
         const gameContainer = document.getElementById("game-container");
 
+        const images = [
+            'img/banana.png',
+            'img/apple.png',
+            'img/cherry.png',
+            'img/pear.png',
+            'img/pineapple.png',
+            'img/strawberry.png'
+        ];
+
         function moveBox() {
             const maxX = gameContainer.clientWidth - box.clientWidth;
             const maxY = gameContainer.clientHeight - box.clientHeight;
             const randomX = Math.floor(Math.random() * maxX);
             const randomY = Math.floor(Math.random() * maxY);
+            const randomImage = images[Math.floor(Math.random() * images.length)];
             box.style.left = `${randomX}px`;
             box.style.top = `${randomY}px`;
+            box.style.backgroundImage = `url(${randomImage})`;
+            box.style.backgroundSize = 'contain';
         }
 
         box.addEventListener("click", () => {
