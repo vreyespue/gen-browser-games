@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Click the Box Game</title>
+    <title>Click the Fruit Game</title>
     <style>
         body { text-align: center; font-family: Arial, sans-serif; }
         #game-container {
@@ -27,12 +27,10 @@
         }
         #coolspot {
             position: relative;
-            left: -200px;
-            top: 70%;
-            transform: translateY(-50%);
+            margin: 20px auto;
             width: 250px;
             height: 250px;
-            background-image: url('img/coolspot.png');
+            background-image: url('img/coolspot_b.png');
             background-size: contain;
             background-repeat: no-repeat;
         }
@@ -43,9 +41,9 @@
     <p>Score: <span id="score">0</span></p>
     <p>Time Left: <span id="time">30</span>s</p>
     <div id="game-container">
-        <div id="coolspot"></div>
         <div id="box"></div>
     </div>
+    <div id="coolspot"></div>
     <script>
         let score = 0;
         let timeLeft = 30;
