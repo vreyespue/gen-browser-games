@@ -48,14 +48,33 @@
         const fruit = { x: 0, y: 0, name: "", img: null };
 
         function spawnFruit() {
-            const platform = platforms[Math.floor(Math.random() * platforms.length)];
+            const MIN_DIST = 160;  // minimum distance from Mario (pixels)
             const name = fruitNames[Math.floor(Math.random() * fruitNames.length)];
-            const minX = platform.x + 4;
-            const maxX = platform.x + platform.width - FRUIT_SIZE - 4;
-            fruit.x = minX + Math.random() * (maxX - minX);
-            fruit.y = platform.y - FRUIT_SIZE;
             fruit.name = name;
-            fruit.img = fruitImages[name];
+            fruit.img  = fruitImages[name];
+
+            // Build one candidate position per platform
+            function candidate() {
+                const platform = platforms[Math.floor(Math.random() * platforms.length)];
+                const minX = platform.x + 4;
+                const maxX = platform.x + platform.width - FRUIT_SIZE - 4;
+                const fx = minX + Math.random() * (maxX - minX);
+                const fy = platform.y - FRUIT_SIZE;
+                const dx = (fx + FRUIT_SIZE / 2) - (player.x + player.width / 2);
+                const dy = (fy + FRUIT_SIZE / 2) - (player.y + player.height / 2);
+                return { x: fx, y: fy, dist: Math.sqrt(dx * dx + dy * dy) };
+            }
+
+            // Try up to 20 random positions; keep the farthest seen as fallback
+            let best = null;
+            for (let i = 0; i < 20; i++) {
+                const c = candidate();
+                if (!best || c.dist > best.dist) best = c;
+                if (c.dist >= MIN_DIST) { best = c; break; }
+            }
+
+            fruit.x = best.x;
+            fruit.y = best.y;
         }
 
         spawnFruit();
