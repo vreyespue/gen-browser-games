@@ -34,6 +34,32 @@
             { x: 150, y: 200, width: 150, height: 10 }
         ];
 
+        // Fruits
+        const FRUIT_SIZE = 32;
+        const fruitNames = ["apple", "banana", "cherry", "pear", "pineapple", "strawberry"];
+        const fruitImages = {};
+        fruitNames.forEach(name => {
+            const img = new Image();
+            img.src = `img/${name}.png`;
+            fruitImages[name] = img;
+        });
+
+        let score = 0;
+        const fruit = { x: 0, y: 0, name: "", img: null };
+
+        function spawnFruit() {
+            const platform = platforms[Math.floor(Math.random() * platforms.length)];
+            const name = fruitNames[Math.floor(Math.random() * fruitNames.length)];
+            const minX = platform.x + 4;
+            const maxX = platform.x + platform.width - FRUIT_SIZE - 4;
+            fruit.x = minX + Math.random() * (maxX - minX);
+            fruit.y = platform.y - FRUIT_SIZE;
+            fruit.name = name;
+            fruit.img = fruitImages[name];
+        }
+
+        spawnFruit();
+
         // Track key presses
         const keys = {};
         window.addEventListener("keydown", e => keys[e.code] = true);
@@ -100,6 +126,17 @@
             if (keys["ArrowUp"] && player.onGround) {
                 player.dy = player.jumpPower;
                 player.onGround = false;
+            }
+
+            // Check fruit collection
+            if (
+                player.x < fruit.x + FRUIT_SIZE &&
+                player.x + player.width > fruit.x &&
+                player.y < fruit.y + FRUIT_SIZE &&
+                player.y + player.height > fruit.y
+            ) {
+                score++;
+                spawnFruit();
             }
 
         }
@@ -270,6 +307,25 @@
             platforms.forEach(platform => {
                 ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
             });
+
+            // Draw fruit
+            if (fruit.img && fruit.img.complete && fruit.img.naturalWidth > 0) {
+                ctx.drawImage(fruit.img, fruit.x, fruit.y, FRUIT_SIZE, FRUIT_SIZE);
+            } else {
+                // Fallback circle while image loads
+                ctx.fillStyle = "gold";
+                ctx.beginPath();
+                ctx.arc(fruit.x + FRUIT_SIZE / 2, fruit.y + FRUIT_SIZE / 2, FRUIT_SIZE / 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Draw score
+            ctx.fillStyle = "rgba(0,0,0,0.55)";
+            ctx.fillRect(6, 6, 130, 30);
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 18px Arial";
+            ctx.textAlign = "left";
+            ctx.fillText("🍎 Score: " + score, 14, 27);
         }
 
         // Main game loop
