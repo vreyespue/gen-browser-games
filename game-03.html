@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Platformer</title>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; }
+        canvas { background: lightblue; display: block; margin: 20px auto; }
+    </style>
+</head>
+<body>
+    <h1>Platformer</h1>
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    <script>
+        // Get the canvas and context
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // Define the player object
+        const player = {
+            x: 50, y: 300, width: 30, height: 40,
+            speed: 5, dy: 0.5, gravity: 0.5, jumpPower: -10,
+            onGround: false,
+            facing: "right",   // "left" or "right"
+            frame: 0,           // 0 = idle, 1 = step-A, 2 = step-B
+            frameTimer: 0
+        };
+
+        // Define the platforms
+        const platforms = [
+            { x: 50, y: 350, width: 200, height: 10 },
+            { x: 300, y: 280, width: 200, height: 10 },
+            { x: 150, y: 200, width: 150, height: 10 }
+        ];
+
+        // Track key presses
+        const keys = {};
+        window.addEventListener("keydown", e => keys[e.code] = true);
+        window.addEventListener("keyup", e => keys[e.code] = false);
+
+        // Update the game state
+        function update() {
+            // Horizontal: Move player left or right
+            const moving = keys["ArrowRight"] || keys["ArrowLeft"];
+            if (keys["ArrowRight"]) { player.x += player.speed; player.facing = "right"; }
+            if (keys["ArrowLeft"])  { player.x -= player.speed; player.facing = "left"; }
+
+            // Advance run animation when moving on the ground
+            if (!player.onGround) {
+                // Airborne: jump pose
+                player.frame = 3;
+                player.frameTimer = 0;
+            } else if (moving) {
+                player.frameTimer++;
+                if (player.frameTimer >= 5) {
+                    player.frameTimer = 0;
+                    player.frame = player.frame === 1 ? 2 : 1;
+                }
+            } else {
+                player.frame = 0;
+                player.frameTimer = 0;
+            }
+
+            // Prevent the player from moving off the left or right side of the canvas
+            if (player.x < 0) {
+                player.x = 0;
+            }
+            if (player.x + player.width > canvas.width) {
+                player.x = canvas.width - player.width;
+            }
+
+            // Vertical: Apply gravity
+            player.dy += player.gravity;
+            player.y += player.dy;
+            player.onGround = false;
+
+            // Check for collisions with platforms
+            platforms.forEach(platform => {
+                if (
+                    player.x < platform.x + platform.width &&
+                    player.x + player.width > platform.x &&
+                    player.y + player.height > platform.y &&
+                    player.y + player.height - player.dy <= platform.y
+                ) {
+                    player.y = platform.y - player.height;
+                    player.dy = 0;
+                    player.onGround = true;
+                }
+            });
+            
+            // Prevent the player from falling through the bottom of the canvas
+            if (player.y + player.height > canvas.height) {
+                player.y = canvas.height - player.height;
+                player.dy = 0;
+                player.onGround = true;
+            }
+
+            // Make the player jump if on the ground and ArrowUp is pressed
+            if (keys["ArrowUp"] && player.onGround) {
+                player.dy = player.jumpPower;
+                player.onGround = false;
+            }
+
+        }
+
+        // Draw Mario-like character at position (ox, y) for a given animation frame.
+        // Character faces RIGHT by default; drawPlayer mirrors horizontally for left-facing.
+        // Limbs are layered: back limbs first, then torso/head, then front limbs.
+        function drawCharacter(ox, y, frame) {
+            const running = frame === 1 || frame === 2;
+            // Body bounces up slightly on each stride
+            const bob = running ? -3 : 0;
+            y += bob;
+
+            // Decide which side of the body leads this frame
+            // frame 1 → right side leads (right leg + right arm are the front limbs)
+            // frame 2 → left  side leads
+            const rightLeads = (frame === 1);
+
+            // Pixel x-origins for each limb slot
+            const leftLegX  = ox + 4;
+            const rightLegX = ox + 16;
+            const leftArmX  = ox - 1;
+            const rightArmX = ox + 25;
+
+            // ── BACK LIMBS ─────────────────────────────────────────────────
+            if (running) {
+                const backLegX = rightLeads ? leftLegX  : rightLegX;
+                const backArmX = rightLeads ? leftArmX  : rightArmX;
+
+                // Back leg: short, kicked downward/behind
+                ctx.fillStyle = "#1A3FCC";
+                ctx.fillRect(backLegX, y + 31, 10, 6);
+                ctx.fillStyle = "#3B1F0A";
+                ctx.fillRect(backLegX - 1, y + 37, 11, 3);
+
+                // Back arm: droops down and behind
+                ctx.fillStyle = "#FDBCB4";
+                ctx.fillRect(backArmX, y + 25, 4, 10);
+            }
+
+            // ── HAT ──────────────────────────────────────────────────────────
+            ctx.fillStyle = "#CC0000";
+            ctx.fillRect(ox + 6, y,     20, 7);
+            ctx.fillRect(ox + 1, y + 6, 28, 4);
+
+            // ── HAIR ─────────────────────────────────────────────────────────
+            ctx.fillStyle = "#7B3F00";
+            ctx.fillRect(ox + 2, y + 10, 5, 3);
+
+            // ── HEAD ─────────────────────────────────────────────────────────
+            ctx.fillStyle = "#FDBCB4";
+            ctx.fillRect(ox + 5, y + 9, 20, 13);
+
+            ctx.fillStyle = "#000000";
+            ctx.fillRect(ox + 15, y + 11, 3, 3);
+            ctx.fillRect(ox + 20, y + 11, 3, 3);
+
+            ctx.fillStyle = "#e8967a";
+            ctx.fillRect(ox + 20, y + 15, 5, 3);
+
+            ctx.fillStyle = "#7B3F00";
+            ctx.fillRect(ox + 11, y + 18, 14, 3);
+
+            // ── SHIRT + BIB ───────────────────────────────────────────────────
+            ctx.fillStyle = "#CC0000";
+            ctx.fillRect(ox + 4, y + 21, 22, 8);
+            ctx.fillStyle = "#1A3FCC";
+            ctx.fillRect(ox + 10, y + 21, 10, 7);
+
+            // ── IDLE LEGS & ARMS (frame 0) ────────────────────────────────────
+            if (frame === 0) {
+                ctx.fillStyle = "#FDBCB4";
+                ctx.fillRect(leftArmX,  y + 22, 4, 7);
+                ctx.fillRect(rightArmX, y + 22, 4, 7);
+
+                ctx.fillStyle = "#1A3FCC";
+                ctx.fillRect(leftLegX,  y + 28, 10, 12);
+                ctx.fillRect(rightLegX, y + 28, 10, 12);
+
+                ctx.fillStyle = "#3B1F0A";
+                ctx.fillRect(leftLegX  - 2, y + 36, 13, 4);
+                ctx.fillRect(rightLegX - 1, y + 36, 13, 4);
+            }
+
+            // ── JUMP POSE (frame 3) ───────────────────────────────────────────
+            if (frame === 3) {
+                // Back arm: sticks down-back
+                ctx.fillStyle = "#FDBCB4";
+                ctx.fillRect(leftArmX, y + 25, 4, 9);
+
+                // Back leg: kicked behind and low
+                ctx.fillStyle = "#1A3FCC";
+                ctx.fillRect(leftLegX, y + 32, 10, 5);
+                ctx.fillStyle = "#3B1F0A";
+                ctx.fillRect(leftLegX - 1, y + 37, 11, 3);
+
+                // Front arm: raised straight up
+                ctx.fillStyle = "#FDBCB4";
+                ctx.fillRect(rightArmX, y + 10, 4, 13);
+
+                // Front leg: knee tucked up high, shin tucked under
+                ctx.fillStyle = "#1A3FCC";
+                ctx.fillRect(rightLegX,     y + 20, 10, 6);  // thigh up
+                ctx.fillRect(rightLegX + 2, y + 26, 8,  5);  // shin tucked
+                ctx.fillStyle = "#3B1F0A";
+                ctx.fillRect(rightLegX,     y + 30, 11, 3);  // shoe
+            }
+
+            // ── FRONT LIMBS (drawn on top of everything) ──────────────────────
+            if (running) {
+                const frontLegX = rightLeads ? rightLegX : leftLegX;
+                const frontArmX = rightLeads ? rightArmX : leftArmX;
+
+                // Front leg: raised high with bent knee
+                // Thigh angled up-forward, shin hanging forward-down
+                ctx.fillStyle = "#1A3FCC";
+                ctx.fillRect(frontLegX,     y + 18, 10, 7);  // thigh raised high
+                ctx.fillRect(frontLegX + 3, y + 25, 8,  7);  // shin hangs forward
+                ctx.fillStyle = "#3B1F0A";
+                ctx.fillRect(frontLegX + 1, y + 31, 12, 4);  // shoe
+
+                // Front arm: raised high and reaches forward
+                ctx.fillStyle = "#FDBCB4";
+                ctx.fillRect(frontArmX, y + 12, 4, 11);
+            }
+        }
+
+        // Draw Mario-like character, mirrored when facing left.
+        // Adds a forward lean when running.
+        function drawPlayer() {
+            const x = Math.floor(player.x);
+            const y = Math.floor(player.y);
+            const running = player.frame === 1 || player.frame === 2;
+            const cx = x + player.width  / 2;  // pivot x (horizontal centre)
+            const cy = y + player.height * 0.55; // pivot y (waist area)
+
+            ctx.save();
+
+            if (player.facing === "left") {
+                // Mirror around the player's horizontal centre
+                ctx.translate(x + player.width, 0);
+                ctx.scale(-1, 1);
+                if (running) {
+                    // Lean forward (in mirrored space the pivot stays the same)
+                    ctx.translate(player.width / 2, cy);
+                    ctx.rotate(0.18);
+                    ctx.translate(-player.width / 2, -cy);
+                }
+                drawCharacter(0, y, player.frame);
+            } else {
+                if (running) {
+                    ctx.translate(cx, cy);
+                    ctx.rotate(0.18);
+                    ctx.translate(-cx, -cy);
+                }
+                drawCharacter(x, y, player.frame);
+            }
+
+            ctx.restore();
+        }
+
+        // Draw the game elements
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawPlayer();
+            
+            ctx.fillStyle = "green";
+            platforms.forEach(platform => {
+                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+            });
+        }
+
+        // Main game loop
+        function gameLoop() {
+            // Wait for 16.67ms (60 frames per second)
+            window.setTimeout(() => {
+                update();
+                draw();
+                requestAnimationFrame(gameLoop);
+            }, 1000 / 60);
+        }
+
+        // Start the game loop
+        gameLoop();
+    </script>
+</body>
+</html>
