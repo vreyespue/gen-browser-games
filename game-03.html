@@ -47,6 +47,27 @@
         let score = 0;
         const fruit = { x: 0, y: 0, name: "", img: null };
 
+        // Audio
+        let audioCtx = null;
+
+        function playFruitSound() {
+            if (!audioCtx) return;
+            const t    = audioCtx.currentTime;
+            const osc  = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(880, t);
+            osc.frequency.exponentialRampToValueAtTime(1320, t + 0.08);
+            gain.gain.setValueAtTime(0, t);
+            gain.gain.linearRampToValueAtTime(0.35, t + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+            osc.start(t);
+            osc.stop(t + 0.22);
+            osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+        }
+
         // Particles for fruit collection effect
         const particles = [];
         const PARTICLE_COLORS = ["#FF5252","#FF9800","#FFEB3B","#66BB6A","#29B6F6","#CE93D8","#FF80AB"];
@@ -126,7 +147,11 @@
 
         // Track key presses
         const keys = {};
-        window.addEventListener("keydown", e => keys[e.code] = true);
+        window.addEventListener("keydown", e => {
+            if (!audioCtx) audioCtx = new AudioContext();
+            else if (audioCtx.state === "suspended") audioCtx.resume();
+            keys[e.code] = true;
+        });
         window.addEventListener("keyup", e => keys[e.code] = false);
 
         // Update the game state
@@ -207,6 +232,7 @@
                     fruit.x + FRUIT_SIZE / 2,
                     fruit.y + FRUIT_SIZE / 2
                 );
+                playFruitSound();
                 spawnFruit();
             }
 
