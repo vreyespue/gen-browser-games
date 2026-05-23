@@ -103,7 +103,7 @@
             oscillator.frequency.exponentialRampToValueAtTime(200, now + 0.15);
 
             gainNode.gain.setValueAtTime(0.3, now);
-            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
 
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
