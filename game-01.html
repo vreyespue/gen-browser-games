@@ -88,8 +88,12 @@
             box.style.backgroundSize = 'contain';
         }
 
+        let audioContext;
+
         function playPop() {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
             const now = audioContext.currentTime;
@@ -103,10 +107,8 @@
 
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
-
             oscillator.start(now);
             oscillator.stop(now + 0.15);
-            oscillator.addEventListener("ended", () => audioContext.close());
         }
 
         box.addEventListener("click", (e) => {
