@@ -34,6 +34,21 @@
             background-size: contain;
             background-repeat: no-repeat;
         }
+        .click-effect {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 220, 50, 0.6);
+            pointer-events: none;
+            transform: translate(-50%, -50%) scale(0);
+            animation: pop 0.4s ease-out forwards;
+        }
+        @keyframes pop {
+            0%   { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+            60%  { transform: translate(-50%, -50%) scale(1.4); opacity: 0.7; }
+            100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+        }
     </style>
 </head>
 <body>
@@ -73,8 +88,16 @@
             box.style.backgroundSize = 'contain';
         }
 
-        box.addEventListener("click", () => {
+        box.addEventListener("click", (e) => {
             if (timeLeft > 0) {
+                const rect = gameContainer.getBoundingClientRect();
+                const effect = document.createElement("div");
+                effect.className = "click-effect";
+                effect.style.left = `${e.clientX - rect.left}px`;
+                effect.style.top = `${e.clientY - rect.top}px`;
+                gameContainer.appendChild(effect);
+                effect.addEventListener("animationend", () => effect.remove());
+
                 score++;
                 scoreDisplay.textContent = score;
                 moveBox();
