@@ -110,10 +110,10 @@
             gainNode.connect(audioContext.destination);
             oscillator.start(now);
             oscillator.stop(now + soundDuration);
-            oscillator.addEventListener("ended", () => {
+            oscillator.onended = () => {
                 oscillator.disconnect();
                 gainNode.disconnect();
-            });
+            };
         }
 
         box.addEventListener("click", (e) => {
