@@ -88,6 +88,27 @@
             box.style.backgroundSize = 'contain';
         }
 
+        function playPop() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            const now = audioContext.currentTime;
+
+            oscillator.type = "sine";
+            oscillator.frequency.setValueAtTime(520, now);
+            oscillator.frequency.exponentialRampToValueAtTime(200, now + 0.15);
+
+            gainNode.gain.setValueAtTime(0.3, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.start(now);
+            oscillator.stop(now + 0.15);
+            oscillator.addEventListener("ended", () => audioContext.close());
+        }
+
         box.addEventListener("click", (e) => {
             if (timeLeft > 0) {
                 const rect = gameContainer.getBoundingClientRect();
@@ -97,6 +118,7 @@
                 effect.style.top = `${e.clientY - rect.top}px`;
                 gameContainer.appendChild(effect);
                 effect.addEventListener("animationend", () => effect.remove());
+                playPop();
 
                 score++;
                 scoreDisplay.textContent = score;
