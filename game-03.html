@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Platformer</title>
+    <title>Bo vs Mario</title>
     <style>
         body { text-align: center; font-family: Arial, sans-serif; background: black; color: white; }
         canvas { background: lightblue; display: block; margin: 20px auto; }
     </style>
 </head>
 <body>
-    <h1>Platformer</h1>
+    <h1>Bo vs Mario</h1>
     <canvas id="gameCanvas" width="600" height="400"></canvas>
     <script>
         const canvas = document.getElementById("gameCanvas");
@@ -23,6 +23,9 @@
             onGround: false, facing: "right", frame: 0, frameTimer: 0
         };
         let reweScore = 0;
+
+        const WIN_SCORE = 20;
+        let winner = null; // "Bo" | "Mario"
 
         // Mario = CPU competitor
         const mario = {
@@ -50,6 +53,25 @@
         const fruit = { x: 0, y: 0, name: "", img: null };
 
         let audioCtx = null;
+
+        function playWinSound() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === "suspended") audioCtx.resume();
+            const notes = [523, 659, 784, 1047]; // C5 E5 G5 C6
+            notes.forEach((freq, i) => {
+                const t = audioCtx.currentTime + i * 0.18;
+                const osc  = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.type = "square";
+                osc.frequency.setValueAtTime(freq, t);
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(0.25, t + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+                osc.start(t); osc.stop(t + 0.35);
+                osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+            });
+        }
 
         function playFruitSound() {
             if (!audioCtx) return;
@@ -205,9 +227,12 @@
                     moveToX(fruitCx);
                 }
             } else if (fruitLevel === 'middle' || fruitLevel === 'top') {
-                if (playerLevel === 'bottom' || playerLevel === 'ground') {
+                if (playerLevel === 'ground') {
+                    const dist = moveToX(150);
+                    if (dist < 20 && onGround) initiateJump(null, 0);
+                } else if (playerLevel === 'bottom') {
                     const dist = moveToX(205);
-                    if (dist < 15 && playerLevel === 'bottom') initiateJump('right', 500);
+                    if (dist < 15) initiateJump('right', 500);
                 } else if (playerLevel === 'middle' && fruitLevel === 'top') {
                     const dist = moveToX(315);
                     if (dist < 15) initiateJump('left', 320);
@@ -269,6 +294,8 @@
         }
 
         function update() {
+            if (winner) return;
+
             updateCPU();
             const cpuInput = { ArrowLeft: cpu.ArrowLeft, ArrowRight: cpu.ArrowRight, ArrowUp: cpu.ArrowUp };
             cpu.ArrowUp = false; // consume jump tap
@@ -281,11 +308,13 @@
                 marioScore++;
                 spawnParticles(fruit.x + FRUIT_SIZE / 2, fruit.y + FRUIT_SIZE / 2);
                 playFruitSound();
+                if (marioScore >= WIN_SCORE) { winner = "Mario"; playWinSound(); return; }
                 spawnFruit();
             } else if (collidesWithFruit(rewe)) {
                 reweScore++;
                 spawnParticles(fruit.x + FRUIT_SIZE / 2, fruit.y + FRUIT_SIZE / 2);
                 playFruitSound();
+                if (reweScore >= WIN_SCORE) { winner = "Bo"; playWinSound(); return; }
                 spawnFruit();
             }
         }
@@ -409,13 +438,18 @@
                 ctx.beginPath();
                 ctx.arc(cx, y + 13, 13, 0, Math.PI * 2);
                 ctx.fill();
-                // Eyes
-                ctx.fillStyle = "white";
-                ctx.beginPath(); ctx.arc(cx - 4, y + 9, 3, 0, Math.PI * 2); ctx.fill();
-                ctx.beginPath(); ctx.arc(cx + 4, y + 9, 3, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = "#222";
-                ctx.beginPath(); ctx.arc(cx - 3, y + 10, 1.5, 0, Math.PI * 2); ctx.fill();
-                ctx.beginPath(); ctx.arc(cx + 5, y + 10, 1.5, 0, Math.PI * 2); ctx.fill();
+                // Sunglasses
+                ctx.fillStyle = "#111";
+                ctx.fillRect(cx - 9, y + 7, 8, 6);   // left lens
+                ctx.fillRect(cx + 1,  y + 7, 8, 6);  // right lens
+                ctx.fillRect(cx - 1, y + 8, 2, 3);   // bridge
+                ctx.fillRect(cx - 13, y + 8, 4, 2);  // left temple
+                ctx.fillRect(cx + 9,  y + 8, 4, 2);  // right temple
+                ctx.fillStyle = "#4488FF";
+                ctx.globalAlpha = 0.35;
+                ctx.fillRect(cx - 8, y + 8, 3, 3);   // left lens shine
+                ctx.fillRect(cx + 2,  y + 8, 3, 3);  // right lens shine
+                ctx.globalAlpha = 1;
                 // Smile
                 ctx.strokeStyle = "#fff";
                 ctx.lineWidth = 1.5;
@@ -509,19 +543,28 @@
             drawParticles();
 
             // Scores
-            ctx.fillStyle = "rgba(0,0,0,0.55)";
+            ctx.fillStyle = "rgba(180,20,20,0.75)";
             ctx.fillRect(6, 6, 145, 30);
             ctx.fillStyle = "#fff";
             ctx.font = "bold 16px Arial";
             ctx.textAlign = "left";
-            ctx.fillText("🎮 CPU: " + marioScore, 14, 27);
+            ctx.fillText("🔴 You: " + reweScore, 14, 27);
 
-            ctx.fillStyle = "rgba(180,20,20,0.75)";
+            ctx.fillStyle = "rgba(0,0,0,0.55)";
             ctx.fillRect(canvas.width - 151, 6, 145, 30);
             ctx.fillStyle = "#fff";
             ctx.font = "bold 16px Arial";
             ctx.textAlign = "left";
-            ctx.fillText("🔴 You: " + reweScore, canvas.width - 143, 27);
+            ctx.fillText("🎮 CPU: " + marioScore, canvas.width - 143, 27);
+
+            if (winner) {
+                ctx.fillStyle = "rgba(0,0,0,0.65)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.textAlign = "center";
+                ctx.fillStyle = "#FFD700";
+                ctx.font = "bold 56px Arial";
+                ctx.fillText(winner + " wins!", canvas.width / 2, canvas.height / 2);
+            }
         }
 
         function gameLoop() {
