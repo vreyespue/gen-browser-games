@@ -5,8 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bo vs Mario</title>
     <style>
-        body { text-align: center; font-family: Arial, sans-serif; background: black; color: white; }
-        canvas { background: lightblue; display: block; margin: 20px auto; }
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        body { text-align: center; background: black; color: white; }
+        canvas { background: lightblue; display: block; margin: 16px auto; }
+        h1 {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 1.8em;
+            color: #aaa;
+            margin: 24px 0 0;
+            letter-spacing: 2px;
+        }
     </style>
 </head>
 <body>
@@ -655,7 +663,7 @@
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.textAlign = "center";
                 ctx.fillStyle = "#FFD700";
-                ctx.font = "bold 56px Arial";
+                ctx.font = "28px 'Press Start 2P'";
                 ctx.fillText(winner + " wins!", canvas.width / 2, canvas.height / 2);
             }
         }
