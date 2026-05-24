@@ -69,8 +69,8 @@ while (Date.now() - startTime < PLAY_DURATION) {
   const elapsed = now - startTime;
 
   const { px, py, onGround, fx, fy, score } = await page.evaluate(() => ({
-    px: player.x, py: player.y, onGround: player.onGround,
-    fx: fruit.x,  fy: fruit.y,  score,
+    px: rewe.x, py: rewe.y, onGround: rewe.onGround,
+    fx: fruit.x, fy: fruit.y, score: reweScore,
   }));
 
   if (score !== lastScore) {
@@ -180,7 +180,7 @@ while (Date.now() - startTime < PLAY_DURATION) {
 }
 
 await releaseAll(page);
-const { score: finalScore } = await page.evaluate(() => ({ score }));
+const { score: finalScore } = await page.evaluate(() => ({ score: reweScore }));
 console.log(`\nDone! Final score: ${finalScore}`);
 await page.waitForTimeout(3000);
 await browser.close();

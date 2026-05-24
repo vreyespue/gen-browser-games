@@ -13,28 +13,31 @@
     <h1>Platformer</h1>
     <canvas id="gameCanvas" width="600" height="400"></canvas>
     <script>
-        // Get the canvas and context
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
-        // Define the player object
-        const player = {
-            x: 50, y: 300, width: 30, height: 40,
-            speed: 5, dy: 0.5, gravity: 0.5, jumpPower: -10,
-            onGround: false,
-            facing: "right",   // "left" or "right"
-            frame: 0,           // 0 = idle, 1 = step-A, 2 = step-B
-            frameTimer: 0
+        // Rewe = human player (arrow keys) — red dot, yellow arms/legs
+        const rewe = {
+            x: 380, y: 240, width: 30, height: 40,
+            speed: 5, dy: 0, gravity: 0.5, jumpPower: -10,
+            onGround: false, facing: "right", frame: 0, frameTimer: 0
         };
+        let reweScore = 0;
 
-        // Define the platforms
+        // Mario = CPU competitor
+        const mario = {
+            x: 50, y: 310, width: 30, height: 40,
+            speed: 5, dy: 0, gravity: 0.5, jumpPower: -10,
+            onGround: false, facing: "right", frame: 0, frameTimer: 0
+        };
+        let marioScore = 0;
+
         const platforms = [
-            { x: 50, y: 350, width: 200, height: 10 },
+            { x: 50,  y: 350, width: 200, height: 10 },
             { x: 300, y: 280, width: 200, height: 10 },
             { x: 150, y: 200, width: 150, height: 10 }
         ];
 
-        // Fruits
         const FRUIT_SIZE = 32;
         const fruitNames = ["apple", "banana", "cherry", "pear", "pineapple", "strawberry"];
         const fruitImages = {};
@@ -44,38 +47,32 @@
             fruitImages[name] = img;
         });
 
-        let score = 0;
         const fruit = { x: 0, y: 0, name: "", img: null };
 
-        // Audio
         let audioCtx = null;
 
         function playFruitSound() {
             if (!audioCtx) return;
-            const t    = audioCtx.currentTime;
-            const osc  = audioCtx.createOscillator();
+            const t = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
+            osc.connect(gain); gain.connect(audioCtx.destination);
             osc.type = "sine";
             osc.frequency.setValueAtTime(880, t);
             osc.frequency.exponentialRampToValueAtTime(1320, t + 0.08);
             gain.gain.setValueAtTime(0, t);
             gain.gain.linearRampToValueAtTime(0.35, t + 0.01);
             gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
-            osc.start(t);
-            osc.stop(t + 0.22);
+            osc.start(t); osc.stop(t + 0.22);
             osc.onended = () => { osc.disconnect(); gain.disconnect(); };
         }
 
-        // Particles for fruit collection effect
         const particles = [];
         const PARTICLE_COLORS = ["#FF5252","#FF9800","#FFEB3B","#66BB6A","#29B6F6","#CE93D8","#FF80AB"];
 
         function spawnParticles(cx, cy) {
-            const count = 18;
-            for (let i = 0; i < count; i++) {
-                const angle = (Math.PI * 2 / count) * i + Math.random() * 0.3;
+            for (let i = 0; i < 18; i++) {
+                const angle = (Math.PI * 2 / 18) * i + Math.random() * 0.3;
                 const speed = 2 + Math.random() * 3.5;
                 particles.push({
                     x: cx, y: cy,
@@ -83,8 +80,7 @@
                     vy: Math.sin(angle) * speed - 1.5,
                     size: 4 + Math.random() * 4,
                     color: PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)],
-                    alpha: 1,
-                    life: 1   // 1 → 0
+                    alpha: 1, life: 1
                 });
             }
         }
@@ -92,11 +88,8 @@
         function updateParticles() {
             for (let i = particles.length - 1; i >= 0; i--) {
                 const p = particles[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.vy += 0.18;      // gravity
-                p.life -= 0.035;
-                p.alpha = Math.max(0, p.life);
+                p.x += p.vx; p.y += p.vy; p.vy += 0.18;
+                p.life -= 0.035; p.alpha = Math.max(0, p.life);
                 if (p.life <= 0) particles.splice(i, 1);
             }
         }
@@ -114,38 +107,31 @@
         }
 
         function spawnFruit() {
-            const MIN_DIST = 160;  // minimum distance from Mario (pixels)
             const name = fruitNames[Math.floor(Math.random() * fruitNames.length)];
-            fruit.name = name;
-            fruit.img  = fruitImages[name];
+            fruit.name = name; fruit.img = fruitImages[name];
 
-            // Build one candidate position per platform
             function candidate() {
                 const platform = platforms[Math.floor(Math.random() * platforms.length)];
-                const minX = platform.x + 4;
-                const maxX = platform.x + platform.width - FRUIT_SIZE - 4;
-                const fx = minX + Math.random() * (maxX - minX);
+                const fx = platform.x + 4 + Math.random() * (platform.width - FRUIT_SIZE - 8);
                 const fy = platform.y - FRUIT_SIZE;
-                const dx = (fx + FRUIT_SIZE / 2) - (player.x + player.width / 2);
-                const dy = (fy + FRUIT_SIZE / 2) - (player.y + player.height / 2);
-                return { x: fx, y: fy, dist: Math.sqrt(dx * dx + dy * dy) };
+                const fcx = fx + FRUIT_SIZE / 2, fcy = fy + FRUIT_SIZE / 2;
+                const dr = Math.hypot(fcx - (rewe.x + 15),  fcy - (rewe.y + 20));
+                const dm = Math.hypot(fcx - (mario.x + 15), fcy - (mario.y + 20));
+                return { x: fx, y: fy, dist: Math.min(dr, dm) };
             }
 
-            // Try up to 20 random positions; keep the farthest seen as fallback
             let best = null;
             for (let i = 0; i < 20; i++) {
                 const c = candidate();
                 if (!best || c.dist > best.dist) best = c;
-                if (c.dist >= MIN_DIST) { best = c; break; }
+                if (c.dist >= 160) { best = c; break; }
             }
-
-            fruit.x = best.x;
-            fruit.y = best.y;
+            fruit.x = best.x; fruit.y = best.y;
         }
 
         spawnFruit();
 
-        // Track key presses
+        // Human player keys
         const keys = {};
         window.addEventListener("keydown", e => {
             if (!audioCtx) audioCtx = new AudioContext();
@@ -154,283 +140,391 @@
         });
         window.addEventListener("keyup", e => keys[e.code] = false);
 
-        // Update the game state
-        function update() {
-            // Horizontal: Move player left or right
-            const moving = keys["ArrowRight"] || keys["ArrowLeft"];
-            if (keys["ArrowRight"]) { player.x += player.speed; player.facing = "right"; }
-            if (keys["ArrowLeft"])  { player.x -= player.speed; player.facing = "left"; }
+        // ── CPU Bot state (mirrors game-03-play.mjs strategy) ─────────────────
+        const cpu = { ArrowLeft: false, ArrowRight: false, ArrowUp: false };
+        let cpuJumpUntil = 0;
+        let cpuJumpDir   = null;
+        let cpuLastLevel = 'bottom';
 
-            // Advance run animation when moving on the ground
-            if (!player.onGround) {
-                // Airborne: jump pose
-                player.frame = 3;
-                player.frameTimer = 0;
-            } else if (moving) {
-                player.frameTimer++;
-                if (player.frameTimer >= 5) {
-                    player.frameTimer = 0;
-                    player.frame = player.frame === 1 ? 2 : 1;
+        function detectLevel(py) {
+            if (py <= 170) return 'top';
+            if (py <= 255) return 'middle';
+            if (py <= 330) return 'bottom';
+            return 'ground';
+        }
+        function detectFruitLevel(fy) {
+            if (fy < 190) return 'top';
+            if (fy < 268) return 'middle';
+            return 'bottom';
+        }
+
+        function updateCPU() {
+            const now = Date.now();
+            const px = mario.x, py = mario.y, onGround = mario.onGround;
+            const fx = fruit.x, fy = fruit.y;
+
+            if (onGround) cpuLastLevel = detectLevel(py);
+            const playerLevel = cpuLastLevel;
+            const fruitLevel  = detectFruitLevel(fy);
+            const playerCx = px + 15, fruitCx = fx + 16;
+
+            cpu.ArrowUp = false;
+
+            if (now < cpuJumpUntil) {
+                cpu.ArrowLeft  = cpuJumpDir === 'left';
+                cpu.ArrowRight = cpuJumpDir === 'right';
+                return;
+            }
+            if (cpuJumpDir !== null) {
+                cpu.ArrowLeft = false; cpu.ArrowRight = false; cpuJumpDir = null;
+            }
+
+            function initiateJump(dir, holdMs) {
+                if (!onGround) return;
+                cpu.ArrowLeft  = dir === 'left';
+                cpu.ArrowRight = dir === 'right';
+                cpu.ArrowUp    = true;
+                cpuJumpDir   = dir;
+                cpuJumpUntil = now + holdMs;
+            }
+
+            function moveToX(targetX) {
+                const d = targetX - playerCx;
+                if (d > 8)       { cpu.ArrowRight = true;  cpu.ArrowLeft = false; }
+                else if (d < -8) { cpu.ArrowLeft  = true;  cpu.ArrowRight = false; }
+                else             { cpu.ArrowLeft  = false; cpu.ArrowRight = false; }
+                return Math.abs(d);
+            }
+
+            if (playerLevel === fruitLevel ||
+                (playerLevel === 'ground' && fruitLevel === 'bottom')) {
+                if (playerLevel === 'ground') {
+                    const dist = moveToX(150);
+                    if (dist < 20 && onGround) initiateJump(null, 0);
+                } else {
+                    moveToX(fruitCx);
                 }
+            } else if (fruitLevel === 'middle' || fruitLevel === 'top') {
+                if (playerLevel === 'bottom' || playerLevel === 'ground') {
+                    const dist = moveToX(205);
+                    if (dist < 15 && playerLevel === 'bottom') initiateJump('right', 500);
+                } else if (playerLevel === 'middle' && fruitLevel === 'top') {
+                    const dist = moveToX(315);
+                    if (dist < 15) initiateJump('left', 320);
+                }
+            } else if (playerLevel === 'top') {
+                cpu.ArrowRight = true; cpu.ArrowLeft = false;
+            } else if (playerLevel === 'middle' && fruitLevel === 'bottom') {
+                cpu.ArrowLeft = true; cpu.ArrowRight = false;
             } else {
-                player.frame = 0;
-                player.frameTimer = 0;
+                moveToX(fruitCx);
+            }
+        }
+
+        // ── Shared character physics ───────────────────────────────────────────
+        function updateCharacter(char, inp) {
+            const moving = inp.ArrowRight || inp.ArrowLeft;
+            if (inp.ArrowRight) { char.x += char.speed; char.facing = "right"; }
+            if (inp.ArrowLeft)  { char.x -= char.speed; char.facing = "left"; }
+
+            if (!char.onGround) {
+                char.frame = 3; char.frameTimer = 0;
+            } else if (moving) {
+                char.frameTimer++;
+                if (char.frameTimer >= 5) { char.frameTimer = 0; char.frame = char.frame === 1 ? 2 : 1; }
+            } else {
+                char.frame = 0; char.frameTimer = 0;
             }
 
-            // Prevent the player from moving off the left or right side of the canvas
-            if (player.x < 0) {
-                player.x = 0;
-            }
-            if (player.x + player.width > canvas.width) {
-                player.x = canvas.width - player.width;
-            }
+            if (char.x < 0) char.x = 0;
+            if (char.x + char.width > canvas.width) char.x = canvas.width - char.width;
 
-            // Vertical: Apply gravity
-            player.dy += player.gravity;
-            player.y += player.dy;
-            player.onGround = false;
+            char.dy += char.gravity; char.y += char.dy; char.onGround = false;
 
-            // Check for collisions with platforms
             platforms.forEach(platform => {
                 if (
-                    player.x < platform.x + platform.width &&
-                    player.x + player.width > platform.x &&
-                    player.y + player.height > platform.y &&
-                    player.y + player.height - player.dy <= platform.y
+                    char.x < platform.x + platform.width &&
+                    char.x + char.width > platform.x &&
+                    char.y + char.height > platform.y &&
+                    char.y + char.height - char.dy <= platform.y
                 ) {
-                    player.y = platform.y - player.height;
-                    player.dy = 0;
-                    player.onGround = true;
+                    char.y = platform.y - char.height; char.dy = 0; char.onGround = true;
                 }
             });
-            
-            // Prevent the player from falling through the bottom of the canvas
-            if (player.y + player.height > canvas.height) {
-                player.y = canvas.height - player.height;
-                player.dy = 0;
-                player.onGround = true;
+
+            if (char.y + char.height > canvas.height) {
+                char.y = canvas.height - char.height; char.dy = 0; char.onGround = true;
             }
 
-            // Make the player jump if on the ground and ArrowUp is pressed
-            if (keys["ArrowUp"] && player.onGround) {
-                player.dy = player.jumpPower;
-                player.onGround = false;
+            if (inp.ArrowUp && char.onGround) {
+                char.dy = char.jumpPower; char.onGround = false;
             }
+        }
 
-            // Update particles
+        function collidesWithFruit(char) {
+            return (
+                char.x < fruit.x + FRUIT_SIZE && char.x + char.width > fruit.x &&
+                char.y < fruit.y + FRUIT_SIZE && char.y + char.height > fruit.y
+            );
+        }
+
+        function update() {
+            updateCPU();
+            const cpuInput = { ArrowLeft: cpu.ArrowLeft, ArrowRight: cpu.ArrowRight, ArrowUp: cpu.ArrowUp };
+            cpu.ArrowUp = false; // consume jump tap
+
+            updateCharacter(mario, cpuInput);
+            updateCharacter(rewe, keys);
             updateParticles();
 
-            // Check fruit collection
-            if (
-                player.x < fruit.x + FRUIT_SIZE &&
-                player.x + player.width > fruit.x &&
-                player.y < fruit.y + FRUIT_SIZE &&
-                player.y + player.height > fruit.y
-            ) {
-                score++;
-                spawnParticles(
-                    fruit.x + FRUIT_SIZE / 2,
-                    fruit.y + FRUIT_SIZE / 2
-                );
+            if (collidesWithFruit(mario)) {
+                marioScore++;
+                spawnParticles(fruit.x + FRUIT_SIZE / 2, fruit.y + FRUIT_SIZE / 2);
+                playFruitSound();
+                spawnFruit();
+            } else if (collidesWithFruit(rewe)) {
+                reweScore++;
+                spawnParticles(fruit.x + FRUIT_SIZE / 2, fruit.y + FRUIT_SIZE / 2);
                 playFruitSound();
                 spawnFruit();
             }
-
         }
 
-        // Draw Mario-like character at position (ox, y) for a given animation frame.
-        // Character faces RIGHT by default; drawPlayer mirrors horizontally for left-facing.
-        // Limbs are layered: back limbs first, then torso/head, then front limbs.
-        function drawCharacter(ox, y, frame) {
+        // ── Draw Mario ────────────────────────────────────────────────────────
+        function drawMarioChar(ox, y, frame) {
             const running = frame === 1 || frame === 2;
-            // Body bounces up slightly on each stride
-            const bob = running ? -3 : 0;
-            y += bob;
+            if (running) y -= 3;
 
-            // Decide which side of the body leads this frame
-            // frame 1 → right side leads (right leg + right arm are the front limbs)
-            // frame 2 → left  side leads
             const rightLeads = (frame === 1);
+            const leftLegX  = ox + 4,  rightLegX = ox + 16;
+            const leftArmX  = ox - 1,  rightArmX = ox + 25;
 
-            // Pixel x-origins for each limb slot
-            const leftLegX  = ox + 4;
-            const rightLegX = ox + 16;
-            const leftArmX  = ox - 1;
-            const rightArmX = ox + 25;
-
-            // ── BACK LIMBS ─────────────────────────────────────────────────
             if (running) {
                 const backLegX = rightLeads ? leftLegX  : rightLegX;
                 const backArmX = rightLeads ? leftArmX  : rightArmX;
-
-                // Back leg: short, kicked downward/behind
                 ctx.fillStyle = "#1A3FCC";
                 ctx.fillRect(backLegX, y + 31, 10, 6);
                 ctx.fillStyle = "#3B1F0A";
                 ctx.fillRect(backLegX - 1, y + 37, 11, 3);
-
-                // Back arm: droops down and behind
                 ctx.fillStyle = "#FDBCB4";
                 ctx.fillRect(backArmX, y + 25, 4, 10);
             }
 
-            // ── HAT ──────────────────────────────────────────────────────────
             ctx.fillStyle = "#CC0000";
-            ctx.fillRect(ox + 6, y,     20, 7);
+            ctx.fillRect(ox + 6, y, 20, 7);
             ctx.fillRect(ox + 1, y + 6, 28, 4);
-
-            // ── HAIR ─────────────────────────────────────────────────────────
             ctx.fillStyle = "#7B3F00";
             ctx.fillRect(ox + 2, y + 10, 5, 3);
-
-            // ── HEAD ─────────────────────────────────────────────────────────
             ctx.fillStyle = "#FDBCB4";
             ctx.fillRect(ox + 5, y + 9, 20, 13);
-
             ctx.fillStyle = "#000000";
             ctx.fillRect(ox + 15, y + 11, 3, 3);
             ctx.fillRect(ox + 20, y + 11, 3, 3);
-
             ctx.fillStyle = "#e8967a";
             ctx.fillRect(ox + 20, y + 15, 5, 3);
-
             ctx.fillStyle = "#7B3F00";
             ctx.fillRect(ox + 11, y + 18, 14, 3);
-
-            // ── SHIRT + BIB ───────────────────────────────────────────────────
             ctx.fillStyle = "#CC0000";
             ctx.fillRect(ox + 4, y + 21, 22, 8);
             ctx.fillStyle = "#1A3FCC";
             ctx.fillRect(ox + 10, y + 21, 10, 7);
 
-            // ── IDLE LEGS & ARMS (frame 0) ────────────────────────────────────
             if (frame === 0) {
                 ctx.fillStyle = "#FDBCB4";
                 ctx.fillRect(leftArmX,  y + 22, 4, 7);
                 ctx.fillRect(rightArmX, y + 22, 4, 7);
-
                 ctx.fillStyle = "#1A3FCC";
                 ctx.fillRect(leftLegX,  y + 28, 10, 12);
                 ctx.fillRect(rightLegX, y + 28, 10, 12);
-
                 ctx.fillStyle = "#3B1F0A";
                 ctx.fillRect(leftLegX  - 2, y + 36, 13, 4);
                 ctx.fillRect(rightLegX - 1, y + 36, 13, 4);
             }
 
-            // ── JUMP POSE (frame 3) ───────────────────────────────────────────
             if (frame === 3) {
-                // Back arm: sticks down-back
                 ctx.fillStyle = "#FDBCB4";
                 ctx.fillRect(leftArmX, y + 25, 4, 9);
-
-                // Back leg: kicked behind and low
                 ctx.fillStyle = "#1A3FCC";
                 ctx.fillRect(leftLegX, y + 32, 10, 5);
                 ctx.fillStyle = "#3B1F0A";
                 ctx.fillRect(leftLegX - 1, y + 37, 11, 3);
-
-                // Front arm: raised straight up
                 ctx.fillStyle = "#FDBCB4";
                 ctx.fillRect(rightArmX, y + 10, 4, 13);
-
-                // Front leg: knee tucked up high, shin tucked under
                 ctx.fillStyle = "#1A3FCC";
-                ctx.fillRect(rightLegX,     y + 20, 10, 6);  // thigh up
-                ctx.fillRect(rightLegX + 2, y + 26, 8,  5);  // shin tucked
+                ctx.fillRect(rightLegX,     y + 20, 10, 6);
+                ctx.fillRect(rightLegX + 2, y + 26, 8,  5);
                 ctx.fillStyle = "#3B1F0A";
-                ctx.fillRect(rightLegX,     y + 30, 11, 3);  // shoe
+                ctx.fillRect(rightLegX, y + 30, 11, 3);
             }
 
-            // ── FRONT LIMBS (drawn on top of everything) ──────────────────────
             if (running) {
                 const frontLegX = rightLeads ? rightLegX : leftLegX;
                 const frontArmX = rightLeads ? rightArmX : leftArmX;
-
-                // Front leg: raised high with bent knee
-                // Thigh angled up-forward, shin hanging forward-down
                 ctx.fillStyle = "#1A3FCC";
-                ctx.fillRect(frontLegX,     y + 18, 10, 7);  // thigh raised high
-                ctx.fillRect(frontLegX + 3, y + 25, 8,  7);  // shin hangs forward
+                ctx.fillRect(frontLegX,     y + 18, 10, 7);
+                ctx.fillRect(frontLegX + 3, y + 25, 8,  7);
                 ctx.fillStyle = "#3B1F0A";
-                ctx.fillRect(frontLegX + 1, y + 31, 12, 4);  // shoe
-
-                // Front arm: raised high and reaches forward
+                ctx.fillRect(frontLegX + 1, y + 31, 12, 4);
                 ctx.fillStyle = "#FDBCB4";
                 ctx.fillRect(frontArmX, y + 12, 4, 11);
             }
         }
 
-        // Draw Mario-like character, mirrored when facing left.
-        // Adds a forward lean when running.
-        function drawPlayer() {
-            const x = Math.floor(player.x);
-            const y = Math.floor(player.y);
-            const running = player.frame === 1 || player.frame === 2;
-            const cx = x + player.width  / 2;  // pivot x (horizontal centre)
-            const cy = y + player.height * 0.55; // pivot y (waist area)
+        function drawMario() {
+            const x = Math.floor(mario.x);
+            const y = Math.floor(mario.y);
+            const running = mario.frame === 1 || mario.frame === 2;
+            const cx = x + mario.width / 2;
+            const cy = y + mario.height * 0.55;
 
             ctx.save();
-
-            if (player.facing === "left") {
-                // Mirror around the player's horizontal centre
-                ctx.translate(x + player.width, 0);
+            if (mario.facing === "left") {
+                ctx.translate(x + mario.width, 0);
                 ctx.scale(-1, 1);
                 if (running) {
-                    // Lean forward (in mirrored space the pivot stays the same)
-                    ctx.translate(player.width / 2, cy);
+                    ctx.translate(mario.width / 2, cy);
                     ctx.rotate(0.18);
-                    ctx.translate(-player.width / 2, -cy);
+                    ctx.translate(-mario.width / 2, -cy);
                 }
-                drawCharacter(0, y, player.frame);
+                drawMarioChar(0, y, mario.frame);
             } else {
                 if (running) {
                     ctx.translate(cx, cy);
                     ctx.rotate(0.18);
                     ctx.translate(-cx, -cy);
                 }
-                drawCharacter(x, y, player.frame);
+                drawMarioChar(x, y, mario.frame);
             }
-
             ctx.restore();
         }
 
-        // Draw the game elements
+        // ── Draw Rewe (red dot, yellow arms/legs) ─────────────────────────────
+        function drawReweChar(ox, y, frame) {
+            const running = frame === 1 || frame === 2;
+            if (running) y -= 2;
+            const cx = ox + 15;
+
+            function drawBody() {
+                ctx.fillStyle = "#DD2222";
+                ctx.beginPath();
+                ctx.arc(cx, y + 13, 13, 0, Math.PI * 2);
+                ctx.fill();
+                // Eyes
+                ctx.fillStyle = "white";
+                ctx.beginPath(); ctx.arc(cx - 4, y + 9, 3, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(cx + 4, y + 9, 3, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#222";
+                ctx.beginPath(); ctx.arc(cx - 3, y + 10, 1.5, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(cx + 5, y + 10, 1.5, 0, Math.PI * 2); ctx.fill();
+                // Smile
+                ctx.strokeStyle = "#fff";
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(cx, y + 15, 5, 0.2, Math.PI - 0.2);
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = "#FFD700";
+
+            if (frame === 0) {
+                // Idle: arms to sides, legs down
+                ctx.fillRect(ox - 4, y + 14, 9,  5);   // left arm
+                ctx.fillRect(ox + 26, y + 14, 9, 5);   // right arm
+                ctx.fillRect(ox + 7,  y + 25, 7, 13);  // left leg
+                ctx.fillRect(ox + 17, y + 25, 7, 13);  // right leg
+                drawBody();
+            } else if (running) {
+                const rightLeads = frame === 1;
+                const backArmX  = rightLeads ? ox - 4  : ox + 26;
+                const frontArmX = rightLeads ? ox + 26 : ox - 4;
+                const backLegX  = rightLeads ? ox + 7  : ox + 17;
+                const frontLegX = rightLeads ? ox + 17 : ox + 7;
+
+                // Back limbs (behind body)
+                ctx.fillRect(backArmX, y + 17, 9, 5);
+                ctx.fillRect(backLegX, y + 26, 7, 8);
+                drawBody();
+                // Front limbs (in front of body)
+                ctx.fillStyle = "#FFD700";
+                ctx.fillRect(frontArmX, y + 11, 9, 5);
+                ctx.fillRect(frontLegX, y + 20, 7, 12);
+            } else if (frame === 3) {
+                // Jump: arms raised, legs tucked
+                ctx.fillRect(ox - 6, y + 5,  9, 5);   // left arm raised
+                ctx.fillRect(ox + 28, y + 5, 9, 5);   // right arm raised
+                ctx.fillRect(ox + 7,  y + 26, 7, 8);  // back leg dropped
+                drawBody();
+                ctx.fillStyle = "#FFD700";
+                ctx.fillRect(ox + 17, y + 22, 7, 8);  // front leg tucked
+            }
+        }
+
+        function drawRewe() {
+            const x = Math.floor(rewe.x);
+            const y = Math.floor(rewe.y);
+            const running = rewe.frame === 1 || rewe.frame === 2;
+            const cx = x + rewe.width / 2;
+            const cy = y + rewe.height * 0.55;
+
+            ctx.save();
+            if (rewe.facing === "left") {
+                ctx.translate(x + rewe.width, 0);
+                ctx.scale(-1, 1);
+                if (running) {
+                    ctx.translate(rewe.width / 2, cy);
+                    ctx.rotate(0.18);
+                    ctx.translate(-rewe.width / 2, -cy);
+                }
+                drawReweChar(0, y, rewe.frame);
+            } else {
+                if (running) {
+                    ctx.translate(cx, cy);
+                    ctx.rotate(0.18);
+                    ctx.translate(-cx, -cy);
+                }
+                drawReweChar(x, y, rewe.frame);
+            }
+            ctx.restore();
+        }
+
+        // ── Draw scene ────────────────────────────────────────────────────────
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawPlayer();
-            
-            ctx.fillStyle = "green";
-            platforms.forEach(platform => {
-                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
-            });
 
-            // Draw fruit
+            drawMario();
+            drawRewe();
+
+            ctx.fillStyle = "green";
+            platforms.forEach(p => ctx.fillRect(p.x, p.y, p.width, p.height));
+
             if (fruit.img && fruit.img.complete && fruit.img.naturalWidth > 0) {
                 ctx.drawImage(fruit.img, fruit.x, fruit.y, FRUIT_SIZE, FRUIT_SIZE);
             } else {
-                // Fallback circle while image loads
                 ctx.fillStyle = "gold";
                 ctx.beginPath();
                 ctx.arc(fruit.x + FRUIT_SIZE / 2, fruit.y + FRUIT_SIZE / 2, FRUIT_SIZE / 2, 0, Math.PI * 2);
                 ctx.fill();
             }
 
-            // Draw particles
             drawParticles();
 
-            // Draw score
+            // Scores
             ctx.fillStyle = "rgba(0,0,0,0.55)";
-            ctx.fillRect(6, 6, 130, 30);
+            ctx.fillRect(6, 6, 145, 30);
             ctx.fillStyle = "#fff";
-            ctx.font = "bold 18px Arial";
+            ctx.font = "bold 16px Arial";
             ctx.textAlign = "left";
-            ctx.fillText("🍎 Score: " + score, 14, 27);
+            ctx.fillText("🎮 CPU: " + marioScore, 14, 27);
+
+            ctx.fillStyle = "rgba(180,20,20,0.75)";
+            ctx.fillRect(canvas.width - 151, 6, 145, 30);
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 16px Arial";
+            ctx.textAlign = "left";
+            ctx.fillText("🔴 You: " + reweScore, canvas.width - 143, 27);
         }
 
-        // Main game loop
         function gameLoop() {
-            // Wait for 16.67ms (60 frames per second)
             window.setTimeout(() => {
                 update();
                 draw();
@@ -438,7 +532,6 @@
             }, 1000 / 60);
         }
 
-        // Start the game loop
         gameLoop();
     </script>
 </body>
