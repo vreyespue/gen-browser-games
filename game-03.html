@@ -19,10 +19,11 @@
 </head>
 <body>
     <h1>Bo vs Mario</h1>
-    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    <canvas id="gameCanvas" width="600" height="416"></canvas>
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
+        const FLOOR = 400;
 
         // Rewe = human player (arrow keys) — red dot, yellow arms/legs
         const rewe = {
@@ -384,8 +385,8 @@
                 }
             });
 
-            if (char.y + char.height > canvas.height) {
-                char.y = canvas.height - char.height; char.dy = 0; char.onGround = true;
+            if (char.y + char.height > FLOOR) {
+                char.y = FLOOR - char.height; char.dy = 0; char.onGround = true;
             }
 
             if (inp.ArrowUp && char.onGround) {
@@ -651,6 +652,11 @@
 
             drawMario();
             drawRewe();
+
+            ctx.fillStyle = "#5aad3f";
+            ctx.fillRect(0, FLOOR, canvas.width, canvas.height - FLOOR);
+            ctx.fillStyle = "#3d8c28";
+            ctx.fillRect(0, FLOOR, canvas.width, 4);
 
             ctx.fillStyle = "green";
             platforms.forEach(p => ctx.fillRect(p.x, p.y, p.width, p.height));
