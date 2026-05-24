@@ -35,6 +35,13 @@
         const WIN_SCORE = 20;
         let winner = null; // "Bo" | "Mario"
 
+        const clouds = [
+            { x: 60,  y: 40,  r: 28, speed: 0.18 },
+            { x: 200, y: 25,  r: 22, speed: 0.12 },
+            { x: 350, y: 55,  r: 32, speed: 0.20 },
+            { x: 490, y: 30,  r: 25, speed: 0.15 },
+        ];
+
         // Mario = CPU competitor
         const mario = {
             x: 550, y: 360, width: 30, height: 40,
@@ -623,8 +630,24 @@
         }
 
         // ── Draw scene ────────────────────────────────────────────────────────
+        function drawCloud(x, y, r) {
+            ctx.fillStyle = "rgba(255,255,255,0.85)";
+            ctx.beginPath();
+            ctx.arc(x,       y,     r,       0, Math.PI * 2);
+            ctx.arc(x + r,   y - 8, r * 0.7, 0, Math.PI * 2);
+            ctx.arc(x - r,   y - 4, r * 0.6, 0, Math.PI * 2);
+            ctx.arc(x + r*1.7, y,   r * 0.55, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            clouds.forEach(c => {
+                c.x += c.speed;
+                if (c.x - c.r * 2 > canvas.width) c.x = -c.r * 2;
+                drawCloud(c.x, c.y, c.r);
+            });
 
             drawMario();
             drawRewe();
