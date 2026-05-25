@@ -122,6 +122,7 @@
         let musicStarted = false;
         let musicStopped = false;
         let musicMaster = null; // master gain for instant silence
+        let musicGen = 0; // incremented each startMusic() call to invalidate old loops
 
         function stopMusic() {
             musicStopped = true;
@@ -131,6 +132,8 @@
         function startMusic() {
             if (musicStarted) return;
             musicStarted = true;
+            musicStopped = false;
+            const gen = ++musicGen;
 
             musicMaster = audioCtx.createGain();
             musicMaster.gain.setValueAtTime(1, audioCtx.currentTime);
@@ -198,7 +201,7 @@
                 });
                 const msUntilEnd = (t - audioCtx.currentTime) * 1000;
                 setTimeout(() => {
-                    if (musicStopped) return;
+                    if (musicStopped || musicGen !== gen) return;
                     scheduleLoop(audioCtx.currentTime + 0.1);
                 }, Math.max(100, msUntilEnd + 5000));
             }
@@ -471,10 +474,7 @@
         }
 
         function update() {
-            if (winner) {
-                if (winner === "Mario" && winTime > 0 && Date.now() - winTime >= 22000) resetGame();
-                return;
-            }
+            if (winner) return;
             if (!gameStarted) return;
 
             updateCPU();
@@ -896,7 +896,7 @@
             reweScore = 0; marioScore = 0;
             winner = null; winTime = 0;
             particles.length = 0;
-            musicStarted = false; musicStopped = false;
+            musicStarted = false;
             gameStarted = true;
             spawnFruit();
             if (audioCtx) { if (audioCtx.state === "suspended") audioCtx.resume(); startMusic(); }
