@@ -657,15 +657,15 @@
         function drawGround() {
             const gw = canvas.width, gy = FLOOR, gh = canvas.height - FLOOR;
             // Dirt base with block grid
-            ctx.fillStyle = "#8b5a2b";
+            ctx.fillStyle = "#5a3515";
             ctx.fillRect(0, gy, gw, gh);
-            ctx.fillStyle = "#6b3a1a";
+            ctx.fillStyle = "#3d1f08";
             for (let x = 0; x <= gw; x += 16) ctx.fillRect(x, gy + 8, 1, gh - 8);
             ctx.fillRect(0, gy + 8, gw, 1);
             // Grass strip
-            ctx.fillStyle = "#5aad3f";
+            ctx.fillStyle = "#2e7d1e";
             ctx.fillRect(0, gy, gw, 7);
-            ctx.fillStyle = "#78c856";
+            ctx.fillStyle = "#3da02a";
             ctx.fillRect(0, gy, gw, 2);
             // Grass tufts
             ctx.fillStyle = "#3d8c28";
