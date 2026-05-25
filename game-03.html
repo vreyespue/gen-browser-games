@@ -674,16 +674,16 @@
         }
 
         function drawPlatform(p) {
-            const bw = 16, bh = 16, ty = p.y;
+            const bw = 16, bh = 10, ty = p.y;
             ctx.fillStyle = "#c96530";
             ctx.fillRect(p.x, ty, p.width, bh);
             ctx.fillStyle = "#7a3010";
             ctx.fillRect(p.x, ty + bh - 2, p.width, 2);
             ctx.fillRect(p.x, ty, 1, bh);
             ctx.fillRect(p.x + p.width - 1, ty, 1, bh);
-            ctx.fillRect(p.x + 1, ty + 8, p.width - 2, 1);
-            for (let x = p.x + bw; x < p.x + p.width - 1; x += bw) ctx.fillRect(x, ty + 1, 1, 7);
-            for (let x = p.x + bw / 2; x < p.x + p.width - 1; x += bw) ctx.fillRect(x, ty + 9, 1, 7);
+            ctx.fillRect(p.x + 1, ty + 6, p.width - 2, 1);
+            for (let x = p.x + bw; x < p.x + p.width - 1; x += bw) ctx.fillRect(x, ty + 1, 1, 5);
+            for (let x = p.x + bw / 2; x < p.x + p.width - 1; x += bw) ctx.fillRect(x, ty + 7, 1, 2);
             // Grass top
             ctx.fillStyle = "#5aad3f";
             ctx.fillRect(p.x, ty, p.width, 5);
