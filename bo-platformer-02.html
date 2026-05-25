@@ -922,6 +922,15 @@
             if (audioCtx) { if (audioCtx.state === "suspended") audioCtx.resume(); startMusic(); }
         }
 
+        document.addEventListener("visibilitychange", () => {
+            if (!audioCtx) return;
+            if (document.hidden) {
+                audioCtx.suspend();
+            } else if (musicStarted && !musicStopped) {
+                audioCtx.resume();
+            }
+        });
+
         function gameLoop() {
             window.setTimeout(() => {
                 update();
