@@ -3,7 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const gameUrl = 'file://' + path.join(__dirname, 'game-03.html');
+const gameUrl = 'file://' + path.join(__dirname, 'bo-platformer-01.html');
 
 // --- Platform geometry ---
 // bottom: x=50-250, y=350, player standY=310
