@@ -43,7 +43,7 @@
             { x: 490, y: 60,  r: 25, speed: 0.15 },
         ];
 
-        const skyGoat = { x: 680, y: 128, speed: 0.22 };
+        const skyGoat = { x: 680, y: 62, speed: 0.22 };
 
         // Pre-generate sparse pixel dots for sky texture
         const skyDots = [];
@@ -657,42 +657,32 @@
         }
 
         function drawGeissbock(x, y) {
-            const cream = "#e8ddb5", horn = "#8b6914", dk = "#1a1a1a";
-            const f = (dx, dy, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x + dx, y + dy, w, h); };
+            const w = "rgba(255,255,255,0.85)";
+            const f = (dx, dy, dw, dh) => { ctx.fillStyle = w; ctx.fillRect(x + dx, y + dy, dw, dh); };
             // body
-            f(18, 12, 22, 13, cream);
+            f(18, 12, 22, 13);
             // head
-            f( 0,  8, 20, 13, cream);
+            f( 0,  8, 20, 13);
             // neck connection
-            f(16, 10,  6,  9, cream);
+            f(16, 10,  6,  9);
             // horns
-            f( 4,  0,  4,  9, horn);   // left horn shaft
-            f( 2,  3,  4,  4, horn);   // left horn curl
-            f(10,  0,  4,  7, horn);   // right horn shaft
-            f(10,  4,  5,  3, horn);   // right horn curl
-            // eye
-            f( 4, 12,  3,  3, dk);
-            // nostril
-            f( 1, 18,  2,  2, dk);
+            f( 4,  0,  4,  9);
+            f( 2,  3,  4,  4);
+            f(10,  0,  4,  7);
+            f(10,  4,  5,  3);
             // beard
-            f( 1, 20,  6,  7, cream);
+            f( 1, 20,  6,  7);
             // legs
-            f(20, 25,  4, 11, cream);
-            f(26, 25,  4, 11, cream);
-            f(32, 25,  4, 11, cream);
-            // hooves
-            f(20, 35,  5,  2, horn);
-            f(26, 35,  5,  2, horn);
-            f(32, 35,  5,  2, horn);
+            f(20, 25,  4, 11);
+            f(26, 25,  4, 11);
+            f(32, 25,  4, 11);
             // tail
-            f(39,  9,  5,  4, cream);
-            f(41,  7,  4,  4, cream);
+            f(39,  9,  5,  4);
+            f(41,  7,  4,  4);
             // "FC Köln" label
             ctx.font = "bold 7px 'Press Start 2P', monospace";
-            ctx.fillStyle = "rgba(255,255,255,0.95)";
-            ctx.fillText("FC Köln", x + 1, y + 50);
-            ctx.fillStyle = "#e30613";
-            ctx.fillText("FC Köln", x,     y + 49);
+            ctx.fillStyle = w;
+            ctx.fillText("FC Köln", x, y + 50);
         }
 
         function drawGround() {
