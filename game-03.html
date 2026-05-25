@@ -835,7 +835,7 @@
             ctx.fillText("🎮 CPU: " + marioScore, canvas.width - 143, 27);
 
             if (!gameStarted) {
-                const bx = 20, by = 312, bw = 560, bh = 84;
+                const bx = 20, by = 125, bw = 560, bh = 44;
                 // drop shadow
                 ctx.fillStyle = "rgba(0,0,0,0.55)";
                 ctx.fillRect(bx + 5, by + 5, bw, bh);
@@ -854,11 +854,10 @@
                 ctx.fillStyle = "#ffffff";
                 ctx.textAlign = "left";
                 ctx.font = "10px 'Press Start 2P', monospace";
-                ctx.fillText("Halli hallo!", bx + 18, by + 32);
-                ctx.fillText("Press the left/right keys to start!", bx + 18, by + 56);
+                ctx.fillText("Halli hallo! Press the left/right keys to start!", bx + 18, by + 27);
                 // blinking arrow
                 if (Math.floor(skyTick * 4) % 2 === 0) {
-                    ctx.fillText(">", bx + bw - 26, by + bh - 12);
+                    ctx.fillText(">", bx + bw - 26, by + bh - 10);
                 }
             }
 
