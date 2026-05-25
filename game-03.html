@@ -662,7 +662,7 @@
             skyDots.forEach(d => {
                 const alpha = 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(skyTick * Math.PI * 2 + d.phase * Math.PI * 2));
                 ctx.fillStyle = d.light ? `rgba(184,228,247,${alpha.toFixed(2)})` : `rgba(107,189,216,${alpha.toFixed(2)})`;
-                ctx.fillRect(d.x, d.y, 2, 2);
+                ctx.fillRect(d.x, d.y, 3, 3);
             });
 
             clouds.forEach(c => {
