@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Bo vs Mario</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
         body { text-align: center; background: black; color: white; }
-        canvas { display: block; margin: 16px auto; }
+        canvas { display: block; margin: 8px auto; max-width: 100%; height: auto; }
         h1 {
             font-family: 'Press Start 2P', monospace;
             font-size: 1.8em;
@@ -15,11 +15,43 @@
             margin: 24px 0 0;
             letter-spacing: 2px;
         }
+        #touchControls {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            gap: 24px;
+            padding: 16px 0 28px;
+        }
+        .touch-btn {
+            width: 76px;
+            height: 76px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            background: rgba(255,255,255,0.12);
+            color: white;
+            font-size: 30px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            outline: none;
+            transition: background 0.08s;
+        }
+        .touch-btn:active { background: rgba(255,255,255,0.35); }
+        @media (hover: none) and (pointer: coarse) {
+            #touchControls { display: flex; }
+            h1 { font-size: 1.1em; margin: 12px 0 0; }
+        }
     </style>
 </head>
 <body>
     <h1>Bo vs Mario</h1>
     <canvas id="gameCanvas" width="600" height="416"></canvas>
+    <div id="touchControls">
+        <button class="touch-btn" id="btnLeft">&#9664;</button>
+        <button class="touch-btn" id="btnJump">&#9650;</button>
+        <button class="touch-btn" id="btnRight">&#9654;</button>
+    </div>
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
@@ -284,6 +316,23 @@
             keys[e.code] = true;
         });
         window.addEventListener("keyup", e => keys[e.code] = false);
+
+        function bindTouchBtn(id, code) {
+            const btn = document.getElementById(id);
+            btn.addEventListener("touchstart", e => {
+                e.preventDefault();
+                if (!audioCtx) audioCtx = new AudioContext();
+                else if (audioCtx.state === "suspended") audioCtx.resume();
+                startMusic();
+                gameStarted = true;
+                keys[code] = true;
+            }, { passive: false });
+            btn.addEventListener("touchend",    e => { e.preventDefault(); keys[code] = false; }, { passive: false });
+            btn.addEventListener("touchcancel", () => { keys[code] = false; });
+        }
+        bindTouchBtn("btnLeft",  "ArrowLeft");
+        bindTouchBtn("btnJump",  "ArrowUp");
+        bindTouchBtn("btnRight", "ArrowRight");
 
         // ── CPU Bot state (mirrors game-03-play.mjs strategy) ─────────────────
         const cpu = { ArrowLeft: false, ArrowRight: false, ArrowUp: false };
