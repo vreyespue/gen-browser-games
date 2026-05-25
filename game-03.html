@@ -654,6 +654,40 @@
             ctx.fill();
         }
 
+        function drawGround() {
+            const gw = canvas.width, gy = FLOOR, gh = canvas.height - FLOOR;
+            // Dirt base with block grid
+            ctx.fillStyle = "#8b5a2b";
+            ctx.fillRect(0, gy, gw, gh);
+            ctx.fillStyle = "#6b3a1a";
+            for (let x = 0; x <= gw; x += 16) ctx.fillRect(x, gy + 8, 1, gh - 8);
+            ctx.fillRect(0, gy + 8, gw, 1);
+            // Grass strip
+            ctx.fillStyle = "#5aad3f";
+            ctx.fillRect(0, gy, gw, 7);
+            ctx.fillStyle = "#78c856";
+            ctx.fillRect(0, gy, gw, 2);
+            // Grass tufts
+            ctx.fillStyle = "#3d8c28";
+            for (let x = 5; x < gw; x += 14) ctx.fillRect(x, gy - 3, 2, 4);
+            for (let x = 11; x < gw; x += 14) ctx.fillRect(x, gy - 2, 2, 3);
+        }
+
+        function drawPlatform(p) {
+            const bw = 16, bh = 16, ty = p.y;
+            ctx.fillStyle = "#c96530";
+            ctx.fillRect(p.x, ty, p.width, bh);
+            ctx.fillStyle = "#e07840";
+            ctx.fillRect(p.x, ty, p.width, 2);
+            ctx.fillStyle = "#7a3010";
+            ctx.fillRect(p.x, ty + bh - 2, p.width, 2);
+            ctx.fillRect(p.x, ty, 1, bh);
+            ctx.fillRect(p.x + p.width - 1, ty, 1, bh);
+            ctx.fillRect(p.x + 1, ty + 8, p.width - 2, 1);
+            for (let x = p.x + bw; x < p.x + p.width - 1; x += bw) ctx.fillRect(x, ty + 1, 1, 7);
+            for (let x = p.x + bw / 2; x < p.x + p.width - 1; x += bw) ctx.fillRect(x, ty + 9, 1, 7);
+        }
+
         function draw() {
             // Sky
             ctx.fillStyle = "#87CEEB";
@@ -674,13 +708,8 @@
             drawMario();
             drawRewe();
 
-            ctx.fillStyle = "#5aad3f";
-            ctx.fillRect(0, FLOOR, canvas.width, canvas.height - FLOOR);
-            ctx.fillStyle = "#3d8c28";
-            ctx.fillRect(0, FLOOR, canvas.width, 4);
-
-            ctx.fillStyle = "green";
-            platforms.forEach(p => ctx.fillRect(p.x, p.y, p.width, p.height));
+            drawGround();
+            platforms.forEach(p => drawPlatform(p));
 
             if (fruit.img && fruit.img.complete && fruit.img.naturalWidth > 0) {
                 ctx.drawImage(fruit.img, fruit.x, fruit.y, FRUIT_SIZE, FRUIT_SIZE);
