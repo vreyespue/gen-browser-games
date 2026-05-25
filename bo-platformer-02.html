@@ -526,25 +526,25 @@
             // Head
             arc("#1252cc", hcx, hcy, 12);
 
-            // Muzzle (peach, lower-front of head)
-            arc("#f0c878", hcx - 3, hcy + 6, 7, 5);
+            // Muzzle — front of face (RIGHT side = front when facing right)
+            arc("#f0c878", ox + 21, y + 16, 6, 5);
 
-            // Eyebrow (signature Sonic — dark angled bar)
+            // Nose — tip of muzzle, at the front
+            rect("#000000", ox + 24, y + 13, 3, 2);
+
+            // Eyebrow — above eye, slopes upward toward front
             ctx.fillStyle = "#000000";
             ctx.beginPath();
-            ctx.moveTo(hcx + 2, hcy - 7);
-            ctx.lineTo(hcx + 11, hcy - 10);
-            ctx.lineTo(hcx + 11, hcy - 7);
-            ctx.lineTo(hcx + 2,  hcy - 5);
+            ctx.moveTo(ox + 14, y + 5);
+            ctx.lineTo(ox + 23, y + 2);
+            ctx.lineTo(ox + 23, y + 4);
+            ctx.lineTo(ox + 14, y + 7);
             ctx.fill();
 
-            // Eye — white sclera (smaller), dark iris, highlight
-            arc("#ffffff", hcx + 6, hcy - 2, 4, 5);
-            arc("#003399", hcx + 7, hcy - 1, 3);
-            arc("#ffffff", hcx + 8, hcy - 3, 1.2);
-
-            // Nose
-            rect("#000000", hcx - 9, hcy + 4, 3, 2);
+            // Eye — white sclera, dark iris, highlight
+            arc("#ffffff", ox + 19, y + 9, 4, 5);
+            arc("#003399", ox + 20, y + 10, 3);
+            arc("#ffffff", ox + 22, y + 8,  1.2);
 
             // Body
             arc("#1252cc", ox + 13, y + 27, 8, 7);
