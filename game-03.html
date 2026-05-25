@@ -17,11 +17,11 @@
         }
         #touchControls {
             display: none;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
-            gap: 24px;
-            padding: 16px 0 28px;
+            padding: 16px 24px 28px;
         }
+        .btn-group { display: flex; gap: 12px; }
         .touch-btn {
             width: 76px;
             height: 76px;
@@ -48,9 +48,11 @@
     <h1>Bo vs Mario</h1>
     <canvas id="gameCanvas" width="600" height="416"></canvas>
     <div id="touchControls">
-        <button class="touch-btn" id="btnLeft">&#9664;</button>
+        <div class="btn-group">
+            <button class="touch-btn" id="btnLeft">&#9664;</button>
+            <button class="touch-btn" id="btnRight">&#9654;</button>
+        </div>
         <button class="touch-btn" id="btnJump">&#9650;</button>
-        <button class="touch-btn" id="btnRight">&#9654;</button>
     </div>
     <script>
         const canvas = document.getElementById("gameCanvas");
