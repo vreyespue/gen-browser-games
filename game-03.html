@@ -677,8 +677,6 @@
             const bw = 16, bh = 16, ty = p.y;
             ctx.fillStyle = "#c96530";
             ctx.fillRect(p.x, ty, p.width, bh);
-            ctx.fillStyle = "#e07840";
-            ctx.fillRect(p.x, ty, p.width, 2);
             ctx.fillStyle = "#7a3010";
             ctx.fillRect(p.x, ty + bh - 2, p.width, 2);
             ctx.fillRect(p.x, ty, 1, bh);
@@ -686,6 +684,14 @@
             ctx.fillRect(p.x + 1, ty + 8, p.width - 2, 1);
             for (let x = p.x + bw; x < p.x + p.width - 1; x += bw) ctx.fillRect(x, ty + 1, 1, 7);
             for (let x = p.x + bw / 2; x < p.x + p.width - 1; x += bw) ctx.fillRect(x, ty + 9, 1, 7);
+            // Grass top
+            ctx.fillStyle = "#5aad3f";
+            ctx.fillRect(p.x, ty, p.width, 5);
+            ctx.fillStyle = "#78c856";
+            ctx.fillRect(p.x, ty, p.width, 2);
+            ctx.fillStyle = "#3d8c28";
+            for (let x = p.x + 3; x < p.x + p.width - 2; x += 10) ctx.fillRect(x, ty - 3, 2, 4);
+            for (let x = p.x + 7; x < p.x + p.width - 2; x += 10) ctx.fillRect(x, ty - 2, 2, 3);
         }
 
         function draw() {
