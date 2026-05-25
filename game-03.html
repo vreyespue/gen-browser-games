@@ -7,7 +7,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
         body { text-align: center; background: black; color: white; }
-        canvas { background: lightblue; display: block; margin: 16px auto; }
+        canvas { display: block; margin: 16px auto; }
         h1 {
             font-family: 'Press Start 2P', monospace;
             font-size: 1.8em;
@@ -42,6 +42,19 @@
             { x: 350, y: 85,  r: 32, speed: 0.20 },
             { x: 490, y: 60,  r: 25, speed: 0.15 },
         ];
+
+        // Pre-generate sparse pixel dots for sky texture
+        const skyDots = [];
+        for (let gx = 8; gx < 600; gx += 16) {
+            for (let gy = 8; gy < 400; gy += 16) {
+                const h = (gx * 7 + gy * 13) % 31;
+                if (h < 7) skyDots.push({
+                    x: gx + (h % 4) * 2, y: gy + Math.floor(h / 4) * 2,
+                    light: h < 3, phase: (gx * 3 + gy * 5) % 100 / 100
+                });
+            }
+        }
+        let skyTick = 0;
 
         // Mario = CPU competitor
         const mario = {
@@ -642,7 +655,15 @@
         }
 
         function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Sky
+            ctx.fillStyle = "#87CEEB";
+            ctx.fillRect(0, 0, canvas.width, FLOOR);
+            skyTick += 0.012;
+            skyDots.forEach(d => {
+                const alpha = 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(skyTick * Math.PI * 2 + d.phase * Math.PI * 2));
+                ctx.fillStyle = d.light ? `rgba(184,228,247,${alpha.toFixed(2)})` : `rgba(107,189,216,${alpha.toFixed(2)})`;
+                ctx.fillRect(d.x, d.y, 2, 2);
+            });
 
             clouds.forEach(c => {
                 c.x += c.speed;
