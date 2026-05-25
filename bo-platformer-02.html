@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Bo vs Mario</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        body { text-align: center; background: black; color: white; user-select: none; -webkit-user-select: none; }
+        canvas { display: block; margin: 8px auto; max-width: 100%; height: auto; }
+        h1 {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 1.8em;
+            color: #aaa;
+            margin: 24px 0 0;
+            letter-spacing: 2px;
+        }
+        #touchControls {
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px 28px;
+        }
+        .btn-group { display: flex; gap: 12px; }
+        .touch-btn {
+            width: 76px;
+            height: 76px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            background: rgba(255,255,255,0.12);
+            color: white;
+            font-size: 30px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            outline: none;
+            transition: background 0.08s;
+        }
+        .touch-btn:active { background: rgba(255,255,255,0.35); }
+        @media (hover: none) and (pointer: coarse) {
+            #touchControls { display: flex; }
+            h1 { font-size: 1.1em; margin: 12px 0 0; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Bo vs Mario</h1>
+    <canvas id="gameCanvas" width="600" height="416"></canvas>
+    <div id="touchControls">
+        <div class="btn-group">
+            <button class="touch-btn" id="btnLeft">&#9664;</button>
+            <button class="touch-btn" id="btnRight">&#9654;</button>
+        </div>
+        <button class="touch-btn" id="btnJump">&#9650;</button>
+    </div>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const FLOOR = 400;
+
+        // Rewe = human player (arrow keys) — red dot, yellow arms/legs
+        const rewe = {
+            x: 135, y: 310, width: 30, height: 40,
+            speed: 5, dy: 0, gravity: 0.5, jumpPower: -10,
+            onGround: false, facing: "right", frame: 0, frameTimer: 0
+        };
+        let reweScore = 0;
+
+        const WIN_SCORE = 20;
+        let winner = null; // "Bo" | "Mario"
+        let winTime = 0;
+
+        const clouds = [
+            { x: 60,  y: 70,  r: 28, speed: 0.18 },
+            { x: 200, y: 55,  r: 22, speed: 0.12 },
+            { x: 350, y: 85,  r: 32, speed: 0.20 },
+            { x: 490, y: 60,  r: 25, speed: 0.15 },
+        ];
+
+        const skyGoat = { x: 680, y: 60, speed: 0.22 };
+
+        // Pre-generate sparse pixel dots for sky texture
+        const skyDots = [];
+        for (let gx = 8; gx < 600; gx += 16) {
+            for (let gy = 8; gy < 400; gy += 16) {
+                const h = (gx * 7 + gy * 13) % 31;
+                if (h < 7) skyDots.push({
+                    x: gx + (h % 4) * 2, y: gy + Math.floor(h / 4) * 2,
+                    light: h < 3, phase: (gx * 3 + gy * 5) % 100 / 100
+                });
+            }
+        }
+        let skyTick = 0;
+
+        // Mario = CPU competitor
+        const mario = {
+            x: 550, y: 360, width: 30, height: 40,
+            speed: 5, dy: 0, gravity: 0.5, jumpPower: -10,
+            onGround: false, facing: "right", frame: 0, frameTimer: 0
+        };
+        let marioScore = 0;
+
+        const platforms = [
+            { x: 50,  y: 350, width: 200, height: 10 },
+            { x: 300, y: 280, width: 200, height: 10 },
+            { x: 150, y: 200, width: 150, height: 10 }
+        ];
+
+        const FRUIT_SIZE = 32;
+        const fruitNames = ["apple", "banana", "cherry", "pear", "pineapple", "strawberry"];
+        const fruitImages = {};
+        fruitNames.forEach(name => {
+            const img = new Image();
+            img.src = `img/${name}.png`;
+            fruitImages[name] = img;
+        });
+
+        const fruit = { x: 0, y: 0, name: "", img: null };
+
+        let audioCtx = null;
+        let musicStarted = false;
+        let musicStopped = false;
+        let musicMaster = null; // master gain for instant silence
+        let musicGen = 0; // incremented each startMusic() call to invalidate old loops
+
+        function stopMusic() {
+            musicStopped = true;
+            if (musicMaster) musicMaster.gain.setValueAtTime(0, audioCtx.currentTime);
+        }
+
+        function startMusic() {
+            if (musicStarted) return;
+            musicStarted = true;
+            musicStopped = false;
+            const gen = ++musicGen;
+
+            musicMaster = audioCtx.createGain();
+            musicMaster.gain.setValueAtTime(1, audioCtx.currentTime);
+            musicMaster.connect(audioCtx.destination);
+
+            const BPM  = 200;
+            const BEAT = 60 / BPM;
+
+            // Super Mario Bros. overworld theme — opening + A×2 + bridge + A×2
+            const intro = [
+                // E5 E5 . E5 . C5 E5
+                [659, 0.5], [659, 0.5], [0, 0.5], [659, 0.5], [0, 0.5], [523, 0.5], [659, 1],
+                // G5 . G4 .
+                [784, 1], [0, 1], [392, 1], [0, 1],
+            ];
+            const phraseA = [
+                // C5 . G4 . E4
+                [523, 1], [0, 0.5], [392, 0.5], [0, 1], [330, 1],
+                // . A4 B4 Bb4 A4
+                [0, 0.5], [440, 0.5], [494, 0.5], [466, 0.5], [440, 1],
+                // G4 E5 G5 A5 F5 G5
+                [392, 0.5], [659, 0.5], [784, 0.5], [880, 1], [698, 0.5], [784, 0.5],
+                // E5 C5 D5 B4~~~
+                [659, 1], [523, 0.5], [587, 0.5], [494, 1.5],
+            ];
+            const bridge = [
+                // G5 F#5 F5 Eb5 . E5 . Ab4
+                [784, 0.5], [740, 0.5], [698, 0.5], [622, 0.5], [0, 0.5], [659, 0.5], [0, 0.5], [415, 0.5],
+                // A4 C5 . A4 C5 D5
+                [440, 1], [523, 0.5], [0, 0.5], [440, 0.5], [523, 0.5], [587, 1],
+                // G5 F#5 F5 Eb5 . E5 . C6
+                [784, 0.5], [740, 0.5], [698, 0.5], [622, 0.5], [0, 0.5], [659, 0.5], [0, 0.5], [1047, 0.5],
+                // . C6 C6~~~
+                [0, 0.5], [1047, 0.5], [1047, 3],
+                // G5 F#5 F5 Eb5 . E5 . Ab4
+                [784, 0.5], [740, 0.5], [698, 0.5], [622, 0.5], [0, 0.5], [659, 0.5], [0, 0.5], [415, 0.5],
+                // A4 C5 . A4 C5 D5
+                [440, 1], [523, 0.5], [0, 0.5], [440, 0.5], [523, 0.5], [587, 1],
+                // E5 D5 C5 (triplet run back to the intro)
+                [659, 1.5], [587, 1.5], [523, 1.5],
+            ];
+            const melody = [
+                ...intro,
+                ...phraseA, ...phraseA,
+                ...bridge,
+            ];
+
+            function scheduleLoop(startTime) {
+                let t = startTime;
+                melody.forEach(([freq, beats]) => {
+                    const dur = beats * BEAT;
+                    if (freq > 0) {
+                        const osc  = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.connect(gain); gain.connect(musicMaster);
+                        osc.type = "square";
+                        osc.frequency.setValueAtTime(freq, t);
+                        gain.gain.setValueAtTime(0.07, t);
+                        gain.gain.setValueAtTime(0.07, t + dur * 0.82);
+                        gain.gain.linearRampToValueAtTime(0, t + dur * 0.95);
+                        osc.start(t); osc.stop(t + dur * 0.95);
+                        osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+                    }
+                    t += dur;
+                });
+                const msUntilEnd = (t - audioCtx.currentTime) * 1000;
+                setTimeout(() => {
+                    if (musicStopped || musicGen !== gen) return;
+                    scheduleLoop(audioCtx.currentTime + 0.1);
+                }, Math.max(100, msUntilEnd + 5000));
+            }
+
+            scheduleLoop(audioCtx.currentTime + 0.1);
+        }
+
+        function playWinSound() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === "suspended") audioCtx.resume();
+            const notes = [523, 659, 784, 1047]; // C5 E5 G5 C6
+            notes.forEach((freq, i) => {
+                const t = audioCtx.currentTime + i * 0.18;
+                const osc  = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.type = "square";
+                osc.frequency.setValueAtTime(freq, t);
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(0.25, t + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+                osc.start(t); osc.stop(t + 0.35);
+                osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+            });
+        }
+
+        function playFruitSound(who) {
+            if (!audioCtx) return;
+            const t = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            // Bo: high bright sweep (C6→G6); Mario: lower neutral sweep (A5→E6)
+            const freqStart = who === "bo" ? 1047 : 740;
+            const freqEnd   = who === "bo" ? 1568 : 1109;
+            osc.type = who === "bo" ? "triangle" : "sine";
+            osc.frequency.setValueAtTime(freqStart, t);
+            osc.frequency.exponentialRampToValueAtTime(freqEnd, t + 0.08);
+            gain.gain.setValueAtTime(0, t);
+            gain.gain.linearRampToValueAtTime(0.35, t + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+            osc.start(t); osc.stop(t + 0.22);
+            osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+        }
+
+        const particles = [];
+        const PARTICLE_COLORS = ["#FF5252","#FF9800","#FFEB3B","#66BB6A","#29B6F6","#CE93D8","#FF80AB"];
+
+        function spawnParticles(cx, cy) {
+            for (let i = 0; i < 18; i++) {
+                const angle = (Math.PI * 2 / 18) * i + Math.random() * 0.3;
+                const speed = 2 + Math.random() * 3.5;
+                particles.push({
+                    x: cx, y: cy,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 1.5,
+                    size: 4 + Math.random() * 4,
+                    color: PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)],
+                    alpha: 1, life: 1
+                });
+            }
+        }
+
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx; p.y += p.vy; p.vy += 0.18;
+                p.life -= 0.035; p.alpha = Math.max(0, p.life);
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+        }
+
+        function drawParticles() {
+            particles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+        }
+
+        function spawnFruit() {
+            const name = fruitNames[Math.floor(Math.random() * fruitNames.length)];
+            fruit.name = name; fruit.img = fruitImages[name];
+
+            function candidate() {
+                const platform = platforms[Math.floor(Math.random() * platforms.length)];
+                const fx = platform.x + 4 + Math.random() * (platform.width - FRUIT_SIZE - 8);
+                const fy = platform.y - FRUIT_SIZE;
+                const fcx = fx + FRUIT_SIZE / 2, fcy = fy + FRUIT_SIZE / 2;
+                const dr = Math.hypot(fcx - (rewe.x + 15),  fcy - (rewe.y + 20));
+                const dm = Math.hypot(fcx - (mario.x + 15), fcy - (mario.y + 20));
+                return { x: fx, y: fy, dist: Math.min(dr, dm) };
+            }
+
+            let best = null;
+            for (let i = 0; i < 20; i++) {
+                const c = candidate();
+                if (!best || c.dist > best.dist) best = c;
+                if (c.dist >= 160) { best = c; break; }
+            }
+            fruit.x = best.x; fruit.y = best.y;
+        }
+
+        spawnFruit();
+
+        // Human player keys
+        const keys = {};
+        let gameStarted = false;
+        window.addEventListener("keydown", e => {
+            if (winner === "Mario") { resetGame(); return; }
+            if (!audioCtx) audioCtx = new AudioContext();
+            else if (audioCtx.state === "suspended") audioCtx.resume();
+            startMusic();
+            gameStarted = true;
+            keys[e.code] = true;
+        });
+        window.addEventListener("keyup", e => keys[e.code] = false);
+
+        function bindTouchBtn(id, code) {
+            const btn = document.getElementById(id);
+            btn.addEventListener("touchstart", e => {
+                e.preventDefault();
+                if (winner === "Mario") { resetGame(); return; }
+                if (!audioCtx) audioCtx = new AudioContext();
+                else if (audioCtx.state === "suspended") audioCtx.resume();
+                startMusic();
+                gameStarted = true;
+                keys[code] = true;
+            }, { passive: false });
+            btn.addEventListener("touchend",    e => { e.preventDefault(); keys[code] = false; }, { passive: false });
+            btn.addEventListener("touchcancel", () => { keys[code] = false; });
+        }
+        bindTouchBtn("btnLeft",  "ArrowLeft");
+        bindTouchBtn("btnJump",  "ArrowUp");
+        bindTouchBtn("btnRight", "ArrowRight");
+
+        // ── CPU Bot state (mirrors bo-platformer-02-play.mjs strategy) ─────────────────
+        const cpu = { ArrowLeft: false, ArrowRight: false, ArrowUp: false };
+        let cpuJumpUntil = 0;
+        let cpuJumpDir   = null;
+        let cpuLastLevel = 'bottom';
+
+        function detectLevel(py) {
+            if (py <= 170) return 'top';
+            if (py <= 255) return 'middle';
+            if (py <= 330) return 'bottom';
+            return 'ground';
+        }
+        function detectFruitLevel(fy) {
+            if (fy < 190) return 'top';
+            if (fy < 268) return 'middle';
+            return 'bottom';
+        }
+
+        function updateCPU() {
+            const now = Date.now();
+            const px = mario.x, py = mario.y, onGround = mario.onGround;
+            const fx = fruit.x, fy = fruit.y;
+
+            if (onGround) cpuLastLevel = detectLevel(py);
+            const playerLevel = cpuLastLevel;
+            const fruitLevel  = detectFruitLevel(fy);
+            const playerCx = px + 15, fruitCx = fx + 16;
+
+            cpu.ArrowUp = false;
+
+            if (now < cpuJumpUntil) {
+                cpu.ArrowLeft  = cpuJumpDir === 'left';
+                cpu.ArrowRight = cpuJumpDir === 'right';
+                return;
+            }
+            if (cpuJumpDir !== null) {
+                cpu.ArrowLeft = false; cpu.ArrowRight = false; cpuJumpDir = null;
+            }
+
+            function initiateJump(dir, holdMs) {
+                if (!onGround) return;
+                cpu.ArrowLeft  = dir === 'left';
+                cpu.ArrowRight = dir === 'right';
+                cpu.ArrowUp    = true;
+                cpuJumpDir   = dir;
+                cpuJumpUntil = now + holdMs;
+            }
+
+            function moveToX(targetX) {
+                const d = targetX - playerCx;
+                if (d > 8)       { cpu.ArrowRight = true;  cpu.ArrowLeft = false; }
+                else if (d < -8) { cpu.ArrowLeft  = true;  cpu.ArrowRight = false; }
+                else             { cpu.ArrowLeft  = false; cpu.ArrowRight = false; }
+                return Math.abs(d);
+            }
+
+            if (playerLevel === fruitLevel ||
+                (playerLevel === 'ground' && fruitLevel === 'bottom')) {
+                if (playerLevel === 'ground') {
+                    const dist = moveToX(150);
+                    if (dist < 20 && onGround) initiateJump(null, 0);
+                } else {
+                    moveToX(fruitCx);
+                }
+            } else if (fruitLevel === 'middle' || fruitLevel === 'top') {
+                if (playerLevel === 'ground') {
+                    const dist = moveToX(150);
+                    if (dist < 20 && onGround) initiateJump(null, 0);
+                } else if (playerLevel === 'bottom') {
+                    const dist = moveToX(205);
+                    if (dist < 15) initiateJump('right', 500);
+                } else if (playerLevel === 'middle' && fruitLevel === 'top') {
+                    const dist = moveToX(315);
+                    if (dist < 15) initiateJump('left', 320);
+                }
+            } else if (playerLevel === 'top') {
+                cpu.ArrowRight = true; cpu.ArrowLeft = false;
+            } else if (playerLevel === 'middle' && fruitLevel === 'bottom') {
+                cpu.ArrowLeft = true; cpu.ArrowRight = false;
+            } else {
+                moveToX(fruitCx);
+            }
+        }
+
+        // ── Shared character physics ───────────────────────────────────────────
+        function updateCharacter(char, inp) {
+            const moving = inp.ArrowRight || inp.ArrowLeft;
+            if (inp.ArrowRight) { char.x += char.speed; char.facing = "right"; }
+            if (inp.ArrowLeft)  { char.x -= char.speed; char.facing = "left"; }
+
+            if (!char.onGround) {
+                char.frame = 3; char.frameTimer = 0;
+            } else if (moving) {
+                char.frameTimer++;
+                if (char.frameTimer >= 5) { char.frameTimer = 0; char.frame = char.frame === 1 ? 2 : 1; }
+            } else {
+                char.frame = 0; char.frameTimer = 0;
+            }
+
+            if (char.x < 0) char.x = 0;
+            if (char.x + char.width > canvas.width) char.x = canvas.width - char.width;
+
+            char.dy += char.gravity; char.y += char.dy; char.onGround = false;
+
+            platforms.forEach(platform => {
+                if (
+                    char.x < platform.x + platform.width &&
+                    char.x + char.width > platform.x &&
+                    char.y + char.height > platform.y &&
+                    char.y + char.height - char.dy <= platform.y
+                ) {
+                    char.y = platform.y - char.height; char.dy = 0; char.onGround = true;
+                }
+            });
+
+            if (char.y + char.height > FLOOR) {
+                char.y = FLOOR - char.height; char.dy = 0; char.onGround = true;
+            }
+
+            if (inp.ArrowUp && char.onGround) {
+                char.dy = char.jumpPower; char.onGround = false;
+            }
+        }
+
+        function collidesWithFruit(char) {
+            return (
+                char.x < fruit.x + FRUIT_SIZE && char.x + char.width > fruit.x &&
+                char.y < fruit.y + FRUIT_SIZE && char.y + char.height > fruit.y
+            );
+        }
+
+        function update() {
+            if (winner) return;
+            if (!gameStarted) return;
+
+            updateCPU();
+            const cpuInput = { ArrowLeft: cpu.ArrowLeft, ArrowRight: cpu.ArrowRight, ArrowUp: cpu.ArrowUp };
+            cpu.ArrowUp = false; // consume jump tap
+
+            updateCharacter(mario, cpuInput);
+            updateCharacter(rewe, keys);
+            updateParticles();
+
+            if (collidesWithFruit(mario)) {
+                marioScore++;
+                spawnParticles(fruit.x + FRUIT_SIZE / 2, fruit.y + FRUIT_SIZE / 2);
+                playFruitSound("mario");
+                if (marioScore >= WIN_SCORE) { winner = "Mario"; winTime = Date.now(); stopMusic(); playWinSound(); return; }
+                spawnFruit();
+            } else if (collidesWithFruit(rewe)) {
+                reweScore++;
+                spawnParticles(fruit.x + FRUIT_SIZE / 2, fruit.y + FRUIT_SIZE / 2);
+                playFruitSound("bo");
+                if (reweScore >= WIN_SCORE) { winner = "Bo"; stopMusic(); playWinSound(); return; }
+                spawnFruit();
+            }
+        }
+
+        // ── Draw Mario ────────────────────────────────────────────────────────
+        function drawMarioChar(ox, y, frame) {
+            const running = frame === 1 || frame === 2;
+            if (running) y -= 3;
+
+            const rightLeads = (frame === 1);
+            const leftLegX  = ox + 4,  rightLegX = ox + 16;
+            const leftArmX  = ox - 1,  rightArmX = ox + 25;
+
+            if (running) {
+                const backLegX = rightLeads ? leftLegX  : rightLegX;
+                const backArmX = rightLeads ? leftArmX  : rightArmX;
+                ctx.fillStyle = "#1A3FCC";
+                ctx.fillRect(backLegX, y + 31, 10, 6);
+                ctx.fillStyle = "#3B1F0A";
+                ctx.fillRect(backLegX - 1, y + 37, 11, 3);
+                ctx.fillStyle = "#FDBCB4";
+                ctx.fillRect(backArmX, y + 25, 4, 10);
+            }
+
+            ctx.fillStyle = "#CC0000";
+            ctx.fillRect(ox + 6, y, 20, 7);
+            ctx.fillRect(ox + 1, y + 6, 28, 4);
+            ctx.fillStyle = "#7B3F00";
+            ctx.fillRect(ox + 2, y + 10, 5, 3);
+            ctx.fillStyle = "#FDBCB4";
+            ctx.fillRect(ox + 5, y + 9, 20, 13);
+            ctx.fillStyle = "#000000";
+            ctx.fillRect(ox + 15, y + 11, 3, 3);
+            ctx.fillRect(ox + 20, y + 11, 3, 3);
+            ctx.fillStyle = "#e8967a";
+            ctx.fillRect(ox + 20, y + 15, 5, 3);
+            ctx.fillStyle = "#7B3F00";
+            ctx.fillRect(ox + 11, y + 18, 14, 3);
+            ctx.fillStyle = "#CC0000";
+            ctx.fillRect(ox + 4, y + 21, 22, 8);
+            ctx.fillStyle = "#1A3FCC";
+            ctx.fillRect(ox + 10, y + 21, 10, 7);
+
+            if (frame === 0) {
+                ctx.fillStyle = "#FDBCB4";
+                ctx.fillRect(leftArmX,  y + 22, 4, 7);
+                ctx.fillRect(rightArmX, y + 22, 4, 7);
+                ctx.fillStyle = "#1A3FCC";
+                ctx.fillRect(leftLegX,  y + 28, 10, 12);
+                ctx.fillRect(rightLegX, y + 28, 10, 12);
+                ctx.fillStyle = "#3B1F0A";
+                ctx.fillRect(leftLegX  - 2, y + 36, 13, 4);
+                ctx.fillRect(rightLegX - 1, y + 36, 13, 4);
+            }
+
+            if (frame === 3) {
+                ctx.fillStyle = "#FDBCB4";
+                ctx.fillRect(leftArmX, y + 25, 4, 9);
+                ctx.fillStyle = "#1A3FCC";
+                ctx.fillRect(leftLegX, y + 32, 10, 5);
+                ctx.fillStyle = "#3B1F0A";
+                ctx.fillRect(leftLegX - 1, y + 37, 11, 3);
+                ctx.fillStyle = "#FDBCB4";
+                ctx.fillRect(rightArmX, y + 10, 4, 13);
+                ctx.fillStyle = "#1A3FCC";
+                ctx.fillRect(rightLegX,     y + 20, 10, 6);
+                ctx.fillRect(rightLegX + 2, y + 26, 8,  5);
+                ctx.fillStyle = "#3B1F0A";
+                ctx.fillRect(rightLegX, y + 30, 11, 3);
+            }
+
+            if (running) {
+                const frontLegX = rightLeads ? rightLegX : leftLegX;
+                const frontArmX = rightLeads ? rightArmX : leftArmX;
+                ctx.fillStyle = "#1A3FCC";
+                ctx.fillRect(frontLegX,     y + 18, 10, 7);
+                ctx.fillRect(frontLegX + 3, y + 25, 8,  7);
+                ctx.fillStyle = "#3B1F0A";
+                ctx.fillRect(frontLegX + 1, y + 31, 12, 4);
+                ctx.fillStyle = "#FDBCB4";
+                ctx.fillRect(frontArmX, y + 12, 4, 11);
+            }
+        }
+
+        function drawMario() {
+            const x = Math.floor(mario.x);
+            const y = Math.floor(mario.y);
+            const running = mario.frame === 1 || mario.frame === 2;
+            const cx = x + mario.width / 2;
+            const cy = y + mario.height * 0.55;
+
+            ctx.save();
+            if (mario.facing === "left") {
+                ctx.translate(x + mario.width, 0);
+                ctx.scale(-1, 1);
+                if (running) {
+                    ctx.translate(mario.width / 2, cy);
+                    ctx.rotate(0.18);
+                    ctx.translate(-mario.width / 2, -cy);
+                }
+                drawMarioChar(0, y, mario.frame);
+            } else {
+                if (running) {
+                    ctx.translate(cx, cy);
+                    ctx.rotate(0.18);
+                    ctx.translate(-cx, -cy);
+                }
+                drawMarioChar(x, y, mario.frame);
+            }
+            ctx.restore();
+        }
+
+        // ── Draw Rewe (red dot, yellow arms/legs) ─────────────────────────────
+        function drawReweChar(ox, y, frame) {
+            const running = frame === 1 || frame === 2;
+            if (running) y -= 2;
+            const cx = ox + 15;
+
+            function drawBody() {
+                ctx.fillStyle = "#DD2222";
+                ctx.beginPath();
+                ctx.arc(cx, y + 13, 13, 0, Math.PI * 2);
+                ctx.fill();
+                // Sunglasses
+                ctx.fillStyle = "#111";
+                ctx.fillRect(cx - 9, y + 7, 8, 6);   // left lens
+                ctx.fillRect(cx + 1,  y + 7, 8, 6);  // right lens
+                ctx.fillRect(cx - 1, y + 8, 2, 3);   // bridge
+                ctx.fillRect(cx - 13, y + 8, 4, 2);  // left temple
+                ctx.fillRect(cx + 9,  y + 8, 4, 2);  // right temple
+                ctx.fillStyle = "#4488FF";
+                ctx.globalAlpha = 0.35;
+                ctx.fillRect(cx - 8, y + 8, 3, 3);   // left lens shine
+                ctx.fillRect(cx + 2,  y + 8, 3, 3);  // right lens shine
+                ctx.globalAlpha = 1;
+                // Smile
+                ctx.strokeStyle = "#fff";
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(cx, y + 15, 5, 0.2, Math.PI - 0.2);
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = "#FFD700";
+
+            if (frame === 0) {
+                // Idle: arms to sides, legs down
+                ctx.fillRect(ox - 4, y + 14, 9,  5);   // left arm
+                ctx.fillRect(ox + 26, y + 14, 9, 5);   // right arm
+                ctx.fillRect(ox + 7,  y + 25, 7, 13);  // left leg
+                ctx.fillRect(ox + 17, y + 25, 7, 13);  // right leg
+                drawBody();
+            } else if (running) {
+                const rightLeads = frame === 1;
+                const backArmX  = rightLeads ? ox - 4  : ox + 26;
+                const frontArmX = rightLeads ? ox + 26 : ox - 4;
+                const backLegX  = rightLeads ? ox + 7  : ox + 17;
+                const frontLegX = rightLeads ? ox + 17 : ox + 7;
+
+                // Back limbs (behind body)
+                ctx.fillRect(backArmX, y + 17, 9, 5);
+                ctx.fillRect(backLegX, y + 26, 7, 8);
+                drawBody();
+                // Front limbs (in front of body)
+                ctx.fillStyle = "#FFD700";
+                ctx.fillRect(frontArmX, y + 11, 9, 5);
+                ctx.fillRect(frontLegX, y + 20, 7, 12);
+            } else if (frame === 3) {
+                // Jump: arms raised, legs tucked
+                ctx.fillRect(ox - 6, y + 5,  9, 5);   // left arm raised
+                ctx.fillRect(ox + 28, y + 5, 9, 5);   // right arm raised
+                ctx.fillRect(ox + 7,  y + 26, 7, 8);  // back leg dropped
+                drawBody();
+                ctx.fillStyle = "#FFD700";
+                ctx.fillRect(ox + 17, y + 22, 7, 8);  // front leg tucked
+            }
+        }
+
+        function drawRewe() {
+            const x = Math.floor(rewe.x);
+            const y = Math.floor(rewe.y);
+            const running = rewe.frame === 1 || rewe.frame === 2;
+            const cx = x + rewe.width / 2;
+            const cy = y + rewe.height * 0.55;
+
+            ctx.save();
+            if (rewe.facing === "left") {
+                ctx.translate(x + rewe.width, 0);
+                ctx.scale(-1, 1);
+                if (running) {
+                    ctx.translate(rewe.width / 2, cy);
+                    ctx.rotate(0.18);
+                    ctx.translate(-rewe.width / 2, -cy);
+                }
+                drawReweChar(0, y, rewe.frame);
+            } else {
+                if (running) {
+                    ctx.translate(cx, cy);
+                    ctx.rotate(0.18);
+                    ctx.translate(-cx, -cy);
+                }
+                drawReweChar(x, y, rewe.frame);
+            }
+            ctx.restore();
+        }
+
+        // ── Draw scene ────────────────────────────────────────────────────────
+        function drawCloud(x, y, r) {
+            ctx.fillStyle = "rgba(255,255,255,0.85)";
+            ctx.beginPath();
+            ctx.arc(x,       y,     r,       0, Math.PI * 2);
+            ctx.arc(x + r,   y - 8, r * 0.7, 0, Math.PI * 2);
+            ctx.arc(x - r,   y - 4, r * 0.6, 0, Math.PI * 2);
+            ctx.arc(x + r*1.7, y,   r * 0.55, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawGeissbock(x, y) {
+            const s = 1.35;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(s, s);
+            const w = "rgba(255,255,255,0.85)";
+            const f = (dx, dy, dw, dh) => { ctx.fillStyle = w; ctx.fillRect(dx, dy, dw, dh); };
+            // body
+            f(18, 12, 22, 13);
+            // head
+            f( 0,  8, 20, 13);
+            // neck connection
+            f(16, 10,  6,  9);
+            // horns
+            f( 4,  0,  4,  9);
+            f( 2,  3,  4,  4);
+            f(10,  0,  4,  7);
+            f(10,  4,  5,  3);
+            // beard
+            f( 1, 20,  6,  7);
+            // legs
+            f(20, 25,  4, 11);
+            f(26, 25,  4, 11);
+            f(32, 25,  4, 11);
+            // tail
+            f(39,  9,  5,  4);
+            f(41,  7,  4,  4);
+            // "FC Köln" label
+            ctx.font = "bold 7px 'Press Start 2P', monospace";
+            ctx.fillStyle = w;
+            ctx.fillText("FC Köln", 0, 50);
+            ctx.restore();
+        }
+
+        function drawGround() {
+            const gw = canvas.width, gy = FLOOR, gh = canvas.height - FLOOR;
+            // Dirt base with block grid
+            ctx.fillStyle = "#5a3515";
+            ctx.fillRect(0, gy, gw, gh);
+            ctx.fillStyle = "#3d1f08";
+            for (let x = 0; x <= gw; x += 16) ctx.fillRect(x, gy + 8, 1, gh - 8);
+            ctx.fillRect(0, gy + 8, gw, 1);
+            // Grass strip
+            ctx.fillStyle = "#2e7d1e";
+            ctx.fillRect(0, gy, gw, 7);
+            ctx.fillStyle = "#3da02a";
+            ctx.fillRect(0, gy, gw, 2);
+            // Grass tufts
+            ctx.fillStyle = "#3d8c28";
+            for (let x = 5; x < gw; x += 14) ctx.fillRect(x, gy - 3, 2, 4);
+            for (let x = 11; x < gw; x += 14) ctx.fillRect(x, gy - 2, 2, 3);
+        }
+
+        function drawPlatform(p) {
+            const bw = 16, bh = 10, ty = p.y;
+            ctx.fillStyle = "#c96530";
+            ctx.fillRect(p.x, ty, p.width, bh);
+            ctx.fillStyle = "#7a3010";
+            ctx.fillRect(p.x, ty + bh - 2, p.width, 2);
+            ctx.fillRect(p.x, ty, 1, bh);
+            ctx.fillRect(p.x + p.width - 1, ty, 1, bh);
+            ctx.fillRect(p.x + 1, ty + 6, p.width - 2, 1);
+            for (let x = p.x + bw; x < p.x + p.width - 1; x += bw) ctx.fillRect(x, ty + 1, 1, 5);
+            for (let x = p.x + bw / 2; x < p.x + p.width - 1; x += bw) ctx.fillRect(x, ty + 7, 1, 2);
+            // Grass top
+            ctx.fillStyle = "#5aad3f";
+            ctx.fillRect(p.x, ty, p.width, 5);
+            ctx.fillStyle = "#78c856";
+            ctx.fillRect(p.x, ty, p.width, 2);
+            ctx.fillStyle = "#3d8c28";
+            for (let x = p.x + 3; x < p.x + p.width - 2; x += 10) ctx.fillRect(x, ty - 3, 2, 4);
+            for (let x = p.x + 7; x < p.x + p.width - 2; x += 10) ctx.fillRect(x, ty - 2, 2, 3);
+        }
+
+        function draw() {
+            // Sky
+            ctx.fillStyle = "#87CEEB";
+            ctx.fillRect(0, 0, canvas.width, FLOOR);
+            skyTick += 0.012;
+            skyDots.forEach(d => {
+                const alpha = 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(skyTick * Math.PI * 2 + d.phase * Math.PI * 2));
+                ctx.fillStyle = d.light ? `rgba(184,228,247,${alpha.toFixed(2)})` : `rgba(107,189,216,${alpha.toFixed(2)})`;
+                ctx.fillRect(d.x, d.y, 3, 3);
+            });
+
+            clouds.forEach(c => {
+                c.x += c.speed;
+                if (c.x - c.r * 2 > canvas.width) c.x = -c.r * 2;
+                drawCloud(c.x, c.y, c.r);
+            });
+
+            skyGoat.x += skyGoat.speed;
+            if (skyGoat.x > canvas.width + 60) skyGoat.x = -60;
+            drawGeissbock(skyGoat.x, skyGoat.y);
+
+            drawMario();
+            drawRewe();
+
+            drawGround();
+            platforms.forEach(p => drawPlatform(p));
+
+            if (fruit.img && fruit.img.complete && fruit.img.naturalWidth > 0) {
+                ctx.drawImage(fruit.img, fruit.x, fruit.y, FRUIT_SIZE, FRUIT_SIZE);
+            } else {
+                ctx.fillStyle = "gold";
+                ctx.beginPath();
+                ctx.arc(fruit.x + FRUIT_SIZE / 2, fruit.y + FRUIT_SIZE / 2, FRUIT_SIZE / 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            drawParticles();
+
+            // Scores
+            ctx.fillStyle = "rgba(180,20,20,0.75)";
+            ctx.fillRect(6, 6, 145, 30);
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 16px Arial";
+            ctx.textAlign = "left";
+            ctx.fillText("🔴 You: " + reweScore, 14, 27);
+
+            ctx.fillStyle = "rgba(0,0,0,0.55)";
+            ctx.fillRect(canvas.width - 151, 6, 145, 30);
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 16px Arial";
+            ctx.textAlign = "left";
+            ctx.fillText("🎮 CPU: " + marioScore, canvas.width - 143, 27);
+
+            if (!gameStarted) {
+                const bx = 20, by = 135, bw = 560, bh = 25;
+                // drop shadow
+                ctx.fillStyle = "rgba(0,0,0,0.55)";
+                ctx.fillRect(bx + 5, by + 5, bw, bh);
+                // background
+                ctx.fillStyle = "#00003a";
+                ctx.fillRect(bx, by, bw, bh);
+                // outer border
+                ctx.strokeStyle = "#ffffff";
+                ctx.lineWidth = 3;
+                ctx.strokeRect(bx + 1.5, by + 1.5, bw - 3, bh - 3);
+                // inner border
+                ctx.strokeStyle = "#6666cc";
+                ctx.lineWidth = 1;
+                ctx.strokeRect(bx + 7, by + 7, bw - 14, bh - 14);
+                // text
+                ctx.fillStyle = "#ffffff";
+                ctx.textAlign = "left";
+                ctx.font = "10px 'Press Start 2P', monospace";
+                ctx.fillText("Halli hallo! Press the left/right keys to start!", bx + 18, by + 18);
+                // blinking arrow
+                if (Math.floor(skyTick * 4) % 2 === 0) {
+                    ctx.fillText(">", bx + bw - 26, by + bh - 10);
+                }
+            }
+
+            if (winner) {
+                ctx.fillStyle = "rgba(0,0,0,0.65)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.textAlign = "center";
+                const cx = canvas.width / 2, cy = canvas.height / 2;
+                ctx.fillStyle = "#FFD700";
+                ctx.font = "28px 'Press Start 2P'";
+                ctx.fillText(winner + " wins!", cx, winner === "Mario" ? cy - 40 : cy);
+                if (winner === "Mario") {
+                    const elapsed = Date.now() - winTime;
+                    const countdown = Math.max(0, 10 - Math.floor(elapsed / 2000));
+                    if (Math.floor(skyTick * 3) % 2 === 0) {
+                        ctx.fillStyle = "#ffffff";
+                        ctx.font = "10px 'Press Start 2P'";
+                        ctx.fillText("Press key to retry", cx, cy + 14);
+                    }
+                    ctx.fillStyle = countdown <= 3 ? "#ff6666" : "#FFD700";
+                    ctx.font = "36px 'Press Start 2P'";
+                    ctx.fillText(countdown, cx, cy + 72);
+                }
+            }
+        }
+
+        function resetGame() {
+            Object.assign(rewe,  { x: 135, y: 310, dy: 0, onGround: false, facing: "right", frame: 0, frameTimer: 0 });
+            Object.assign(mario, { x: 550, y: 360, dy: 0, onGround: false, facing: "right", frame: 0, frameTimer: 0 });
+            reweScore = 0; marioScore = 0;
+            winner = null; winTime = 0;
+            particles.length = 0;
+            musicStarted = false;
+            gameStarted = true;
+            spawnFruit();
+            if (audioCtx) { if (audioCtx.state === "suspended") audioCtx.resume(); startMusic(); }
+        }
+
+        function gameLoop() {
+            window.setTimeout(() => {
+                update();
+                draw();
+                requestAnimationFrame(gameLoop);
+            }, 1000 / 60);
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html>
