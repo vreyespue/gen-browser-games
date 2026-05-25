@@ -834,6 +834,34 @@
             ctx.textAlign = "left";
             ctx.fillText("🎮 CPU: " + marioScore, canvas.width - 143, 27);
 
+            if (!gameStarted) {
+                const bx = 20, by = 312, bw = 560, bh = 84;
+                // drop shadow
+                ctx.fillStyle = "rgba(0,0,0,0.55)";
+                ctx.fillRect(bx + 5, by + 5, bw, bh);
+                // background
+                ctx.fillStyle = "#00003a";
+                ctx.fillRect(bx, by, bw, bh);
+                // outer border
+                ctx.strokeStyle = "#ffffff";
+                ctx.lineWidth = 3;
+                ctx.strokeRect(bx + 1.5, by + 1.5, bw - 3, bh - 3);
+                // inner border
+                ctx.strokeStyle = "#6666cc";
+                ctx.lineWidth = 1;
+                ctx.strokeRect(bx + 7, by + 7, bw - 14, bh - 14);
+                // text
+                ctx.fillStyle = "#ffffff";
+                ctx.textAlign = "left";
+                ctx.font = "10px 'Press Start 2P', monospace";
+                ctx.fillText("Halli hallo!", bx + 18, by + 32);
+                ctx.fillText("Press the left/right keys to start!", bx + 18, by + 56);
+                // blinking arrow
+                if (Math.floor(skyTick * 4) % 2 === 0) {
+                    ctx.fillText(">", bx + bw - 26, by + bh - 12);
+                }
+            }
+
             if (winner) {
                 ctx.fillStyle = "rgba(0,0,0,0.65)";
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
