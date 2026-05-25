@@ -657,8 +657,12 @@
         }
 
         function drawGeissbock(x, y) {
+            const s = 1.35;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(s, s);
             const w = "rgba(255,255,255,0.85)";
-            const f = (dx, dy, dw, dh) => { ctx.fillStyle = w; ctx.fillRect(x + dx, y + dy, dw, dh); };
+            const f = (dx, dy, dw, dh) => { ctx.fillStyle = w; ctx.fillRect(dx, dy, dw, dh); };
             // body
             f(18, 12, 22, 13);
             // head
@@ -682,7 +686,8 @@
             // "FC Köln" label
             ctx.font = "bold 7px 'Press Start 2P', monospace";
             ctx.fillStyle = w;
-            ctx.fillText("FC Köln", x, y + 50);
+            ctx.fillText("FC Köln", 0, 50);
+            ctx.restore();
         }
 
         function drawGround() {
