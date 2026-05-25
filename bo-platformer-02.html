@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Bo vs Mario</title>
+    <title>Bo vs Sonic</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
         body { text-align: center; background: black; color: white; user-select: none; -webkit-user-select: none; }
@@ -45,7 +45,7 @@
     </style>
 </head>
 <body>
-    <h1>Bo vs Mario</h1>
+    <h1>Bo vs Sonic</h1>
     <canvas id="gameCanvas" width="600" height="416"></canvas>
     <div id="touchControls">
         <div class="btn-group">
@@ -68,7 +68,7 @@
         let reweScore = 0;
 
         const WIN_SCORE = 20;
-        let winner = null; // "Bo" | "Mario"
+        let winner = null; // "Bo" | "Sonic"
         let winTime = 0;
 
         const clouds = [
@@ -93,13 +93,13 @@
         }
         let skyTick = 0;
 
-        // Mario = CPU competitor
-        const mario = {
+        // Sonic = CPU competitor
+        const sonic = {
             x: 550, y: 360, width: 30, height: 40,
             speed: 5, dy: 0, gravity: 0.5, jumpPower: -10,
             onGround: false, facing: "right", frame: 0, frameTimer: 0
         };
-        let marioScore = 0;
+        let sonicScore = 0;
 
         const platforms = [
             { x: 50,  y: 350, width: 200, height: 10 },
@@ -296,7 +296,7 @@
                 const fy = platform.y - FRUIT_SIZE;
                 const fcx = fx + FRUIT_SIZE / 2, fcy = fy + FRUIT_SIZE / 2;
                 const dr = Math.hypot(fcx - (rewe.x + 15),  fcy - (rewe.y + 20));
-                const dm = Math.hypot(fcx - (mario.x + 15), fcy - (mario.y + 20));
+                const dm = Math.hypot(fcx - (sonic.x + 15), fcy - (sonic.y + 20));
                 return { x: fx, y: fy, dist: Math.min(dr, dm) };
             }
 
@@ -315,7 +315,7 @@
         const keys = {};
         let gameStarted = false;
         window.addEventListener("keydown", e => {
-            if (winner === "Mario") { resetGame(); return; }
+            if (winner === "Sonic") { resetGame(); return; }
             if (!audioCtx) audioCtx = new AudioContext();
             else if (audioCtx.state === "suspended") audioCtx.resume();
             startMusic();
@@ -328,7 +328,7 @@
             const btn = document.getElementById(id);
             btn.addEventListener("touchstart", e => {
                 e.preventDefault();
-                if (winner === "Mario") { resetGame(); return; }
+                if (winner === "Sonic") { resetGame(); return; }
                 if (!audioCtx) audioCtx = new AudioContext();
                 else if (audioCtx.state === "suspended") audioCtx.resume();
                 startMusic();
@@ -362,7 +362,7 @@
 
         function updateCPU() {
             const now = Date.now();
-            const px = mario.x, py = mario.y, onGround = mario.onGround;
+            const px = sonic.x, py = sonic.y, onGround = sonic.onGround;
             const fx = fruit.x, fy = fruit.y;
 
             if (onGround) cpuLastLevel = detectLevel(py);
@@ -481,15 +481,15 @@
             const cpuInput = { ArrowLeft: cpu.ArrowLeft, ArrowRight: cpu.ArrowRight, ArrowUp: cpu.ArrowUp };
             cpu.ArrowUp = false; // consume jump tap
 
-            updateCharacter(mario, cpuInput);
+            updateCharacter(sonic, cpuInput);
             updateCharacter(rewe, keys);
             updateParticles();
 
-            if (collidesWithFruit(mario)) {
-                marioScore++;
+            if (collidesWithFruit(sonic)) {
+                sonicScore++;
                 spawnParticles(fruit.x + FRUIT_SIZE / 2, fruit.y + FRUIT_SIZE / 2);
-                playFruitSound("mario");
-                if (marioScore >= WIN_SCORE) { winner = "Mario"; winTime = Date.now(); stopMusic(); playWinSound(); return; }
+                playFruitSound("sonic");
+                if (sonicScore >= WIN_SCORE) { winner = "Sonic"; winTime = Date.now(); stopMusic(); playWinSound(); return; }
                 spawnFruit();
             } else if (collidesWithFruit(rewe)) {
                 reweScore++;
@@ -500,110 +500,127 @@
             }
         }
 
-        // ── Draw Mario ────────────────────────────────────────────────────────
-        function drawMarioChar(ox, y, frame) {
+        // ── Draw Sonic ────────────────────────────────────────────────────────
+        function drawSonicChar(ox, y, frame) {
             const running = frame === 1 || frame === 2;
-            if (running) y -= 3;
+            const rightLeads = frame === 1;
+            if (running) y -= 2;
 
-            const rightLeads = (frame === 1);
-            const leftLegX  = ox + 4,  rightLegX = ox + 16;
-            const leftArmX  = ox - 1,  rightArmX = ox + 25;
+            const hcx = ox + 14, hcy = y + 12;
 
-            if (running) {
-                const backLegX = rightLeads ? leftLegX  : rightLegX;
-                const backArmX = rightLeads ? leftArmX  : rightArmX;
-                ctx.fillStyle = "#1A3FCC";
-                ctx.fillRect(backLegX, y + 31, 10, 6);
-                ctx.fillStyle = "#3B1F0A";
-                ctx.fillRect(backLegX - 1, y + 37, 11, 3);
-                ctx.fillStyle = "#FDBCB4";
-                ctx.fillRect(backArmX, y + 25, 4, 10);
+            function arc(c, x, cy, rx, ry) {
+                ctx.fillStyle = c;
+                ctx.beginPath(); ctx.ellipse(x, cy, rx, ry || rx, 0, 0, Math.PI * 2); ctx.fill();
             }
+            function tri(c, x1, y1, x2, y2, x3, y3) {
+                ctx.fillStyle = c;
+                ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.lineTo(x3,y3); ctx.fill();
+            }
+            function rect(c, x, y, w, h) { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); }
 
-            ctx.fillStyle = "#CC0000";
-            ctx.fillRect(ox + 6, y, 20, 7);
-            ctx.fillRect(ox + 1, y + 6, 28, 4);
-            ctx.fillStyle = "#7B3F00";
-            ctx.fillRect(ox + 2, y + 10, 5, 3);
-            ctx.fillStyle = "#FDBCB4";
-            ctx.fillRect(ox + 5, y + 9, 20, 13);
+            // Three backward quills
+            tri("#1252cc", hcx-5,hcy-2,  hcx-16,hcy-8,  hcx-7,hcy+3);
+            tri("#1252cc", hcx-2,hcy-8,  hcx-13,hcy-18, hcx+2,hcy-3);
+            tri("#1252cc", hcx+3,hcy-11, hcx-5, hcy-21, hcx+7,hcy-5);
+
+            // Head
+            arc("#1252cc", hcx, hcy, 12);
+
+            // Muzzle (peach, lower-front of head)
+            arc("#f0c878", hcx - 3, hcy + 6, 7, 5);
+
+            // Eyebrow (signature Sonic — dark angled bar)
             ctx.fillStyle = "#000000";
-            ctx.fillRect(ox + 15, y + 11, 3, 3);
-            ctx.fillRect(ox + 20, y + 11, 3, 3);
-            ctx.fillStyle = "#e8967a";
-            ctx.fillRect(ox + 20, y + 15, 5, 3);
-            ctx.fillStyle = "#7B3F00";
-            ctx.fillRect(ox + 11, y + 18, 14, 3);
-            ctx.fillStyle = "#CC0000";
-            ctx.fillRect(ox + 4, y + 21, 22, 8);
-            ctx.fillStyle = "#1A3FCC";
-            ctx.fillRect(ox + 10, y + 21, 10, 7);
+            ctx.beginPath();
+            ctx.moveTo(hcx + 2, hcy - 7);
+            ctx.lineTo(hcx + 11, hcy - 10);
+            ctx.lineTo(hcx + 11, hcy - 7);
+            ctx.lineTo(hcx + 2,  hcy - 5);
+            ctx.fill();
 
+            // Eye — white sclera (smaller), dark iris, highlight
+            arc("#ffffff", hcx + 6, hcy - 2, 4, 5);
+            arc("#003399", hcx + 7, hcy - 1, 3);
+            arc("#ffffff", hcx + 8, hcy - 3, 1.2);
+
+            // Nose
+            rect("#000000", hcx - 9, hcy + 4, 3, 2);
+
+            // Body
+            arc("#1252cc", ox + 13, y + 27, 8, 7);
+            arc("#f0c878",  ox + 10, y + 27, 5);
+
+            // Arms & gloves (kept clear of the head area)
             if (frame === 0) {
-                ctx.fillStyle = "#FDBCB4";
-                ctx.fillRect(leftArmX,  y + 22, 4, 7);
-                ctx.fillRect(rightArmX, y + 22, 4, 7);
-                ctx.fillStyle = "#1A3FCC";
-                ctx.fillRect(leftLegX,  y + 28, 10, 12);
-                ctx.fillRect(rightLegX, y + 28, 10, 12);
-                ctx.fillStyle = "#3B1F0A";
-                ctx.fillRect(leftLegX  - 2, y + 36, 13, 4);
-                ctx.fillRect(rightLegX - 1, y + 36, 13, 4);
+                rect("#1252cc", ox + 1,  y + 23, 5, 7);
+                rect("#1252cc", ox + 22, y + 23, 5, 7);
+                arc("#ffffff",  ox + 3,  y + 32, 5);
+                arc("#ffffff",  ox + 25, y + 32, 5);
+            } else if (running) {
+                const fwdX = rightLeads ? ox + 22 : ox + 1;
+                const bckX = rightLeads ? ox + 1  : ox + 22;
+                rect("#1252cc", fwdX, y + 20, 5, 7);
+                arc("#ffffff",  fwdX + 2, y + 29, 5);
+                rect("#1252cc", bckX, y + 26, 5, 6);
+                arc("#ffffff",  bckX + 2, y + 34, 5);
+            } else {
+                rect("#1252cc", ox - 1, y + 18, 5, 7);
+                rect("#1252cc", ox + 24, y + 18, 5, 7);
+                arc("#ffffff",  ox + 2,  y + 27, 5);
+                arc("#ffffff",  ox + 27, y + 27, 5);
             }
 
-            if (frame === 3) {
-                ctx.fillStyle = "#FDBCB4";
-                ctx.fillRect(leftArmX, y + 25, 4, 9);
-                ctx.fillStyle = "#1A3FCC";
-                ctx.fillRect(leftLegX, y + 32, 10, 5);
-                ctx.fillStyle = "#3B1F0A";
-                ctx.fillRect(leftLegX - 1, y + 37, 11, 3);
-                ctx.fillStyle = "#FDBCB4";
-                ctx.fillRect(rightArmX, y + 10, 4, 13);
-                ctx.fillStyle = "#1A3FCC";
-                ctx.fillRect(rightLegX,     y + 20, 10, 6);
-                ctx.fillRect(rightLegX + 2, y + 26, 8,  5);
-                ctx.fillStyle = "#3B1F0A";
-                ctx.fillRect(rightLegX, y + 30, 11, 3);
-            }
-
-            if (running) {
-                const frontLegX = rightLeads ? rightLegX : leftLegX;
-                const frontArmX = rightLeads ? rightArmX : leftArmX;
-                ctx.fillStyle = "#1A3FCC";
-                ctx.fillRect(frontLegX,     y + 18, 10, 7);
-                ctx.fillRect(frontLegX + 3, y + 25, 8,  7);
-                ctx.fillStyle = "#3B1F0A";
-                ctx.fillRect(frontLegX + 1, y + 31, 12, 4);
-                ctx.fillStyle = "#FDBCB4";
-                ctx.fillRect(frontArmX, y + 12, 4, 11);
+            // Legs & shoes
+            if (frame === 0) {
+                rect("#0a3a9a", ox + 8,  y + 33, 5, 4);
+                rect("#0a3a9a", ox + 17, y + 33, 5, 4);
+                rect("#cc1100", ox + 5,  y + 35, 9, 5);
+                rect("#cc1100", ox + 15, y + 35, 9, 5);
+                rect("#ffcc00", ox + 8,  y + 37, 3, 2);
+                rect("#ffcc00", ox + 17, y + 37, 3, 2);
+            } else if (running) {
+                const fL = ox + (rightLeads ? 17 : 8);
+                const bL = ox + (rightLeads ?  8 : 17);
+                rect("#0a3a9a", fL,     y + 28, 5, 7);
+                rect("#cc1100", fL - 2, y + 33, 10, 5);
+                rect("#ffcc00", fL,     y + 35, 3, 2);
+                rect("#0a3a9a", bL,     y + 33, 5, 4);
+                rect("#cc1100", bL - 1, y + 36, 8, 4);
+                rect("#ffcc00", bL + 1, y + 37, 3, 2);
+            } else {
+                rect("#0a3a9a", ox + 7,  y + 32, 5, 5);
+                rect("#0a3a9a", ox + 17, y + 32, 5, 5);
+                rect("#cc1100", ox + 4,  y + 35, 9, 5);
+                rect("#cc1100", ox + 15, y + 35, 9, 5);
+                rect("#ffcc00", ox + 7,  y + 37, 3, 2);
+                rect("#ffcc00", ox + 17, y + 37, 3, 2);
             }
         }
 
-        function drawMario() {
-            const x = Math.floor(mario.x);
-            const y = Math.floor(mario.y);
-            const running = mario.frame === 1 || mario.frame === 2;
-            const cx = x + mario.width / 2;
-            const cy = y + mario.height * 0.55;
+        function drawSonic() {
+            const x = Math.floor(sonic.x);
+            const y = Math.floor(sonic.y);
+            const running = sonic.frame === 1 || sonic.frame === 2;
+            const cx = x + sonic.width / 2;
+            const cy = y + sonic.height * 0.55;
 
             ctx.save();
-            if (mario.facing === "left") {
-                ctx.translate(x + mario.width, 0);
+            if (sonic.facing === "left") {
+                ctx.translate(x + sonic.width, 0);
                 ctx.scale(-1, 1);
                 if (running) {
-                    ctx.translate(mario.width / 2, cy);
+                    ctx.translate(sonic.width / 2, cy);
                     ctx.rotate(0.18);
-                    ctx.translate(-mario.width / 2, -cy);
+                    ctx.translate(-sonic.width / 2, -cy);
                 }
-                drawMarioChar(0, y, mario.frame);
+                drawSonicChar(0, y, sonic.frame);
             } else {
                 if (running) {
                     ctx.translate(cx, cy);
                     ctx.rotate(0.18);
                     ctx.translate(-cx, -cy);
                 }
-                drawMarioChar(x, y, mario.frame);
+                drawSonicChar(x, y, sonic.frame);
             }
             ctx.restore();
         }
@@ -808,7 +825,7 @@
             if (skyGoat.x > canvas.width + 60) skyGoat.x = -60;
             drawGeissbock(skyGoat.x, skyGoat.y);
 
-            drawMario();
+            drawSonic();
             drawRewe();
 
             drawGround();
@@ -838,7 +855,7 @@
             ctx.fillStyle = "#fff";
             ctx.font = "bold 16px Arial";
             ctx.textAlign = "left";
-            ctx.fillText("🎮 CPU: " + marioScore, canvas.width - 143, 27);
+            ctx.fillText("🦔 CPU: " + sonicScore, canvas.width - 143, 27);
 
             if (!gameStarted) {
                 const bx = 20, by = 135, bw = 560, bh = 25;
@@ -874,8 +891,8 @@
                 const cx = canvas.width / 2, cy = canvas.height / 2;
                 ctx.fillStyle = "#FFD700";
                 ctx.font = "28px 'Press Start 2P'";
-                ctx.fillText(winner + " wins!", cx, winner === "Mario" ? cy - 40 : cy);
-                if (winner === "Mario") {
+                ctx.fillText(winner + " wins!", cx, cy - 40);
+                if (winner === "Sonic") {
                     const elapsed = Date.now() - winTime;
                     const countdown = Math.max(0, 10 - Math.floor(elapsed / 2000));
                     if (Math.floor(skyTick * 3) % 2 === 0) {
@@ -892,8 +909,8 @@
 
         function resetGame() {
             Object.assign(rewe,  { x: 135, y: 310, dy: 0, onGround: false, facing: "right", frame: 0, frameTimer: 0 });
-            Object.assign(mario, { x: 550, y: 360, dy: 0, onGround: false, facing: "right", frame: 0, frameTimer: 0 });
-            reweScore = 0; marioScore = 0;
+            Object.assign(sonic, { x: 550, y: 360, dy: 0, onGround: false, facing: "right", frame: 0, frameTimer: 0 });
+            reweScore = 0; sonicScore = 0;
             winner = null; winTime = 0;
             particles.length = 0;
             musicStarted = false;
