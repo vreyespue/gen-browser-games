@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Bo vs Mario</title>
+    <title>Bo vs Handwerker</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
         body { text-align: center; background: black; color: white; user-select: none; -webkit-user-select: none; }
@@ -45,7 +45,7 @@
     </style>
 </head>
 <body>
-    <h1>Bo vs Mario</h1>
+    <h1>Bo vs Handwerker</h1>
     <canvas id="gameCanvas" width="600" height="416"></canvas>
     <div id="touchControls">
         <div class="btn-group">
@@ -68,7 +68,7 @@
         let reweScore = 0;
 
         const WIN_SCORE = 20;
-        let winner = null; // "Bo" | "Mario"
+        let winner = null; // "Bo" | "Handwerker"
         let winTime = 0;
 
         const clouds = [
@@ -93,13 +93,13 @@
         }
         let skyTick = 0;
 
-        // Mario = CPU competitor
-        const mario = {
+        // Handwerker = CPU competitor
+        const handwerker = {
             x: 550, y: 360, width: 30, height: 40,
             speed: 5, dy: 0, gravity: 0.5, jumpPower: -10,
             onGround: false, facing: "right", frame: 0, frameTimer: 0
         };
-        let marioScore = 0;
+        let handwerkerScore = 0;
 
         const platforms = [
             { x: 50,  y: 350, width: 200, height: 10 },
@@ -142,7 +142,7 @@
             const BPM  = 200;
             const BEAT = 60 / BPM;
 
-            // Super Mario Bros. overworld theme — opening + A×2 + bridge + A×2
+            // Super Handwerker Bros. overworld theme — opening + A×2 + bridge + A×2
             const intro = [
                 // E5 E5 . E5 . C5 E5
                 [659, 0.5], [659, 0.5], [0, 0.5], [659, 0.5], [0, 0.5], [523, 0.5], [659, 1],
@@ -234,7 +234,7 @@
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain); gain.connect(audioCtx.destination);
-            // Bo: high bright sweep (C6→G6); Mario: lower neutral sweep (A5→E6)
+            // Bo: high bright sweep (C6→G6); Handwerker: lower neutral sweep (A5→E6)
             const freqStart = who === "bo" ? 1047 : 740;
             const freqEnd   = who === "bo" ? 1568 : 1109;
             osc.type = who === "bo" ? "triangle" : "sine";
@@ -296,7 +296,7 @@
                 const fy = platform.y - FRUIT_SIZE;
                 const fcx = fx + FRUIT_SIZE / 2, fcy = fy + FRUIT_SIZE / 2;
                 const dr = Math.hypot(fcx - (rewe.x + 15),  fcy - (rewe.y + 20));
-                const dm = Math.hypot(fcx - (mario.x + 15), fcy - (mario.y + 20));
+                const dm = Math.hypot(fcx - (handwerker.x + 15), fcy - (handwerker.y + 20));
                 return { x: fx, y: fy, dist: Math.min(dr, dm) };
             }
 
@@ -315,7 +315,7 @@
         const keys = {};
         let gameStarted = false;
         window.addEventListener("keydown", e => {
-            if (winner === "Mario") { resetGame(); return; }
+            if (winner === "Handwerker") { resetGame(); return; }
             if (!audioCtx) audioCtx = new AudioContext();
             else if (audioCtx.state === "suspended") audioCtx.resume();
             startMusic();
@@ -328,7 +328,7 @@
             const btn = document.getElementById(id);
             btn.addEventListener("touchstart", e => {
                 e.preventDefault();
-                if (winner === "Mario") { resetGame(); return; }
+                if (winner === "Handwerker") { resetGame(); return; }
                 if (!audioCtx) audioCtx = new AudioContext();
                 else if (audioCtx.state === "suspended") audioCtx.resume();
                 startMusic();
@@ -362,7 +362,7 @@
 
         function updateCPU() {
             const now = Date.now();
-            const px = mario.x, py = mario.y, onGround = mario.onGround;
+            const px = handwerker.x, py = handwerker.y, onGround = handwerker.onGround;
             const fx = fruit.x, fy = fruit.y;
 
             if (onGround) cpuLastLevel = detectLevel(py);
@@ -481,15 +481,15 @@
             const cpuInput = { ArrowLeft: cpu.ArrowLeft, ArrowRight: cpu.ArrowRight, ArrowUp: cpu.ArrowUp };
             cpu.ArrowUp = false; // consume jump tap
 
-            updateCharacter(mario, cpuInput);
+            updateCharacter(handwerker, cpuInput);
             updateCharacter(rewe, keys);
             updateParticles();
 
-            if (collidesWithFruit(mario)) {
-                marioScore++;
+            if (collidesWithFruit(handwerker)) {
+                handwerkerScore++;
                 spawnParticles(fruit.x + FRUIT_SIZE / 2, fruit.y + FRUIT_SIZE / 2);
-                playFruitSound("mario");
-                if (marioScore >= WIN_SCORE) { winner = "Mario"; winTime = Date.now(); stopMusic(); playWinSound(); return; }
+                playFruitSound("handwerker");
+                if (handwerkerScore >= WIN_SCORE) { winner = "Handwerker"; winTime = Date.now(); stopMusic(); playWinSound(); return; }
                 spawnFruit();
             } else if (collidesWithFruit(rewe)) {
                 reweScore++;
@@ -500,8 +500,8 @@
             }
         }
 
-        // ── Draw Mario ────────────────────────────────────────────────────────
-        function drawMarioChar(ox, y, frame) {
+        // ── Draw Handwerker ────────────────────────────────────────────────────────
+        function drawHandwerkerChar(ox, y, frame) {
             const running = frame === 1 || frame === 2;
             if (running) y -= 3;
 
@@ -580,30 +580,30 @@
             }
         }
 
-        function drawMario() {
-            const x = Math.floor(mario.x);
-            const y = Math.floor(mario.y);
-            const running = mario.frame === 1 || mario.frame === 2;
-            const cx = x + mario.width / 2;
-            const cy = y + mario.height * 0.55;
+        function drawHandwerker() {
+            const x = Math.floor(handwerker.x);
+            const y = Math.floor(handwerker.y);
+            const running = handwerker.frame === 1 || handwerker.frame === 2;
+            const cx = x + handwerker.width / 2;
+            const cy = y + handwerker.height * 0.55;
 
             ctx.save();
-            if (mario.facing === "left") {
-                ctx.translate(x + mario.width, 0);
+            if (handwerker.facing === "left") {
+                ctx.translate(x + handwerker.width, 0);
                 ctx.scale(-1, 1);
                 if (running) {
-                    ctx.translate(mario.width / 2, cy);
+                    ctx.translate(handwerker.width / 2, cy);
                     ctx.rotate(0.18);
-                    ctx.translate(-mario.width / 2, -cy);
+                    ctx.translate(-handwerker.width / 2, -cy);
                 }
-                drawMarioChar(0, y, mario.frame);
+                drawHandwerkerChar(0, y, handwerker.frame);
             } else {
                 if (running) {
                     ctx.translate(cx, cy);
                     ctx.rotate(0.18);
                     ctx.translate(-cx, -cy);
                 }
-                drawMarioChar(x, y, mario.frame);
+                drawHandwerkerChar(x, y, handwerker.frame);
             }
             ctx.restore();
         }
@@ -808,7 +808,7 @@
             if (skyGoat.x > canvas.width + 60) skyGoat.x = -60;
             drawGeissbock(skyGoat.x, skyGoat.y);
 
-            drawMario();
+            drawHandwerker();
             drawRewe();
 
             drawGround();
@@ -838,7 +838,7 @@
             ctx.fillStyle = "#fff";
             ctx.font = "bold 16px Arial";
             ctx.textAlign = "left";
-            ctx.fillText("🎮 CPU: " + marioScore, canvas.width - 143, 27);
+            ctx.fillText("🎮 CPU: " + handwerkerScore, canvas.width - 143, 27);
 
             if (!gameStarted) {
                 const bx = 20, by = 135, bw = 560, bh = 25;
@@ -874,8 +874,8 @@
                 const cx = canvas.width / 2, cy = canvas.height / 2;
                 ctx.fillStyle = "#FFD700";
                 ctx.font = "28px 'Press Start 2P'";
-                ctx.fillText(winner + " wins!", cx, winner === "Mario" ? cy - 40 : cy);
-                if (winner === "Mario") {
+                ctx.fillText(winner + " wins!", cx, winner === "Handwerker" ? cy - 40 : cy);
+                if (winner === "Handwerker") {
                     const elapsed = Date.now() - winTime;
                     const countdown = Math.max(0, 10 - Math.floor(elapsed / 2000));
                     if (Math.floor(skyTick * 3) % 2 === 0) {
@@ -892,8 +892,8 @@
 
         function resetGame() {
             Object.assign(rewe,  { x: 135, y: 310, dy: 0, onGround: false, facing: "right", frame: 0, frameTimer: 0 });
-            Object.assign(mario, { x: 550, y: 360, dy: 0, onGround: false, facing: "right", frame: 0, frameTimer: 0 });
-            reweScore = 0; marioScore = 0;
+            Object.assign(handwerker, { x: 550, y: 360, dy: 0, onGround: false, facing: "right", frame: 0, frameTimer: 0 });
+            reweScore = 0; handwerkerScore = 0;
             winner = null; winTime = 0;
             particles.length = 0;
             musicStarted = false;
