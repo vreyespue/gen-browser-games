@@ -254,7 +254,7 @@
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain); gain.connect(audioCtx.destination);
-            // Bo: high bright sweep (C6→G6); Handwerker: lower neutral sweep (A5→E6)
+            // You: high bright sweep (C6→G6); CPU: lower neutral sweep (A5→E6)
             const freqStart = who === "bo" ? 1047 : 740;
             const freqEnd   = who === "bo" ? 1568 : 1109;
             osc.type = who === "bo" ? "triangle" : "sine";
