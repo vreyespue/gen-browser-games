@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Bo vs Sonic</title>
+    <title>Bo vs Punky</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
         body { text-align: center; background: black; color: white; user-select: none; -webkit-user-select: none; }
@@ -45,7 +45,7 @@
     </style>
 </head>
 <body>
-    <h1>Bo vs Sonic</h1>
+    <h1>Bo vs Punky</h1>
     <canvas id="gameCanvas" width="600" height="416"></canvas>
     <div id="touchControls">
         <div class="btn-group">
@@ -68,7 +68,7 @@
         let reweScore = 0;
 
         const WIN_SCORE = 20;
-        let winner = null; // "Bo" | "Sonic"
+        let winner = null; // "Bo" | "Punky"
         let winTime = 0;
 
         const clouds = [
@@ -93,13 +93,13 @@
         }
         let skyTick = 0;
 
-        // Sonic = CPU competitor
-        const sonic = {
+        // Punky = CPU competitor
+        const punky = {
             x: 550, y: 360, width: 30, height: 40,
             speed: 5, dy: 0, gravity: 0.5, jumpPower: -10,
             onGround: false, facing: "right", frame: 0, frameTimer: 0
         };
-        let sonicScore = 0;
+        let punkyScore = 0;
 
         const platforms = [
             { x: 50,  y: 350, width: 200, height: 10 },
@@ -234,7 +234,7 @@
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain); gain.connect(audioCtx.destination);
-            // Bo: high bright sweep (C6→G6); Mario: lower neutral sweep (A5→E6)
+            // You: high bright sweep (C6→G6); CPU: lower neutral sweep (A5→E6)
             const freqStart = who === "bo" ? 1047 : 740;
             const freqEnd   = who === "bo" ? 1568 : 1109;
             osc.type = who === "bo" ? "triangle" : "sine";
@@ -296,7 +296,7 @@
                 const fy = platform.y - FRUIT_SIZE;
                 const fcx = fx + FRUIT_SIZE / 2, fcy = fy + FRUIT_SIZE / 2;
                 const dr = Math.hypot(fcx - (rewe.x + 15),  fcy - (rewe.y + 20));
-                const dm = Math.hypot(fcx - (sonic.x + 15), fcy - (sonic.y + 20));
+                const dm = Math.hypot(fcx - (punky.x + 15), fcy - (punky.y + 20));
                 return { x: fx, y: fy, dist: Math.min(dr, dm) };
             }
 
@@ -315,7 +315,7 @@
         const keys = {};
         let gameStarted = false;
         window.addEventListener("keydown", e => {
-            if (winner === "Sonic") { resetGame(); return; }
+            if (winner === "Punky") { resetGame(); return; }
             if (!audioCtx) audioCtx = new AudioContext();
             else if (audioCtx.state === "suspended") audioCtx.resume();
             startMusic();
@@ -328,7 +328,7 @@
             const btn = document.getElementById(id);
             btn.addEventListener("touchstart", e => {
                 e.preventDefault();
-                if (winner === "Sonic") { resetGame(); return; }
+                if (winner === "Punky") { resetGame(); return; }
                 if (!audioCtx) audioCtx = new AudioContext();
                 else if (audioCtx.state === "suspended") audioCtx.resume();
                 startMusic();
@@ -362,7 +362,7 @@
 
         function updateCPU() {
             const now = Date.now();
-            const px = sonic.x, py = sonic.y, onGround = sonic.onGround;
+            const px = punky.x, py = punky.y, onGround = punky.onGround;
             const fx = fruit.x, fy = fruit.y;
 
             if (onGround) cpuLastLevel = detectLevel(py);
@@ -481,15 +481,15 @@
             const cpuInput = { ArrowLeft: cpu.ArrowLeft, ArrowRight: cpu.ArrowRight, ArrowUp: cpu.ArrowUp };
             cpu.ArrowUp = false; // consume jump tap
 
-            updateCharacter(sonic, cpuInput);
+            updateCharacter(punky, cpuInput);
             updateCharacter(rewe, keys);
             updateParticles();
 
-            if (collidesWithFruit(sonic)) {
-                sonicScore++;
+            if (collidesWithFruit(punky)) {
+                punkyScore++;
                 spawnParticles(fruit.x + FRUIT_SIZE / 2, fruit.y + FRUIT_SIZE / 2);
-                playFruitSound("sonic");
-                if (sonicScore >= WIN_SCORE) { winner = "Sonic"; winTime = Date.now(); stopMusic(); playWinSound(); return; }
+                playFruitSound("punky");
+                if (punkyScore >= WIN_SCORE) { winner = "Punky"; winTime = Date.now(); stopMusic(); playWinSound(); return; }
                 spawnFruit();
             } else if (collidesWithFruit(rewe)) {
                 reweScore++;
@@ -500,8 +500,8 @@
             }
         }
 
-        // ── Draw Sonic ────────────────────────────────────────────────────────
-        function drawSonicChar(ox, y, frame) {
+        // ── Draw Punky ────────────────────────────────────────────────────────
+        function drawPunkyChar(ox, y, frame) {
             const running = frame === 1 || frame === 2;
             const rightLeads = frame === 1;
             if (running) y -= 2;
@@ -600,30 +600,30 @@
             }
         }
 
-        function drawSonic() {
-            const x = Math.floor(sonic.x);
-            const y = Math.floor(sonic.y);
-            const running = sonic.frame === 1 || sonic.frame === 2;
-            const cx = x + sonic.width / 2;
-            const cy = y + sonic.height * 0.55;
+        function drawPunky() {
+            const x = Math.floor(punky.x);
+            const y = Math.floor(punky.y);
+            const running = punky.frame === 1 || punky.frame === 2;
+            const cx = x + punky.width / 2;
+            const cy = y + punky.height * 0.55;
 
             ctx.save();
-            if (sonic.facing === "left") {
-                ctx.translate(x + sonic.width, 0);
+            if (punky.facing === "left") {
+                ctx.translate(x + punky.width, 0);
                 ctx.scale(-1, 1);
                 if (running) {
-                    ctx.translate(sonic.width / 2, cy);
+                    ctx.translate(punky.width / 2, cy);
                     ctx.rotate(0.18);
-                    ctx.translate(-sonic.width / 2, -cy);
+                    ctx.translate(-punky.width / 2, -cy);
                 }
-                drawSonicChar(0, y, sonic.frame);
+                drawPunkyChar(0, y, punky.frame);
             } else {
                 if (running) {
                     ctx.translate(cx, cy);
                     ctx.rotate(0.18);
                     ctx.translate(-cx, -cy);
                 }
-                drawSonicChar(x, y, sonic.frame);
+                drawPunkyChar(x, y, punky.frame);
             }
             ctx.restore();
         }
@@ -828,7 +828,7 @@
             if (skyGoat.x > canvas.width + 60) skyGoat.x = -60;
             drawGeissbock(skyGoat.x, skyGoat.y);
 
-            drawSonic();
+            drawPunky();
             drawRewe();
 
             drawGround();
@@ -858,7 +858,7 @@
             ctx.fillStyle = "#fff";
             ctx.font = "bold 16px Arial";
             ctx.textAlign = "left";
-            ctx.fillText("🦔 CPU: " + sonicScore, canvas.width - 143, 27);
+            ctx.fillText("🦔 CPU: " + punkyScore, canvas.width - 143, 27);
 
             if (!gameStarted) {
                 const bx = 20, by = 135, bw = 560, bh = 25;
@@ -895,7 +895,7 @@
                 ctx.fillStyle = "#FFD700";
                 ctx.font = "28px 'Press Start 2P'";
                 ctx.fillText(winner + " wins!", cx, cy - 40);
-                if (winner === "Sonic") {
+                if (winner === "Punky") {
                     const elapsed = Date.now() - winTime;
                     const countdown = Math.max(0, 10 - Math.floor(elapsed / 2000));
                     if (Math.floor(skyTick * 3) % 2 === 0) {
@@ -912,8 +912,8 @@
 
         function resetGame() {
             Object.assign(rewe,  { x: 135, y: 310, dy: 0, onGround: false, facing: "right", frame: 0, frameTimer: 0 });
-            Object.assign(sonic, { x: 550, y: 360, dy: 0, onGround: false, facing: "right", frame: 0, frameTimer: 0 });
-            reweScore = 0; sonicScore = 0;
+            Object.assign(punky, { x: 550, y: 360, dy: 0, onGround: false, facing: "right", frame: 0, frameTimer: 0 });
+            reweScore = 0; punkyScore = 0;
             winner = null; winTime = 0;
             particles.length = 0;
             musicStarted = false;
