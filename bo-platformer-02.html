@@ -742,22 +742,16 @@
 
         function drawThunder(x, y) {
             ctx.save();
-            // Dark storm cloud
-            ctx.fillStyle = "rgba(72,72,92,0.93)";
-            ctx.beginPath();
-            ctx.arc(x + 26, y + 10, 22, 0, Math.PI * 2);
-            ctx.arc(x + 46, y +  4, 16, 0, Math.PI * 2);
-            ctx.arc(x +  8, y +  6, 14, 0, Math.PI * 2);
-            ctx.arc(x + 60, y + 10, 12, 0, Math.PI * 2);
-            ctx.fill();
-            // Lightning bolt in opaque gold
-            ctx.translate(x + 14, y + 24);
+            ctx.translate(x, y);
             ctx.fillStyle = "#ffd700";
             const f = (dx, dy, dw, dh) => ctx.fillRect(dx, dy, dw, dh);
+            // top arm — wide, slanting right
             f( 8,  0, 16,  4);
             f( 6,  4, 14,  4);
             f( 4,  8, 12,  4);
+            // centre cross bar
             f( 2, 12, 20,  5);
+            // bottom arm — slanting right to tip
             f(10, 17, 12,  4);
             f(12, 21, 10,  4);
             f(14, 25,  8,  4);
@@ -871,7 +865,7 @@
             });
 
             skyGoat.x += skyGoat.speed;
-            if (skyGoat.x > canvas.width + 90) skyGoat.x = -90;
+            if (skyGoat.x > canvas.width + 60) skyGoat.x = -60;
             drawThunder(skyGoat.x, skyGoat.y);
 
             drawPunky();
