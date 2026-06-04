@@ -335,8 +335,7 @@
         const keys = {};
         let gameStarted = false;
         window.addEventListener("keydown", e => {
-            if (winner === "Handwerker" && Date.now() - winTime >= 5000) { resetGame(); return; }
-            if (winner === "Handwerker") return;
+            if (winner === "Handwerker") { resetGame(); return; }
             if (!audioCtx) audioCtx = new AudioContext();
             else if (audioCtx.state === "suspended") audioCtx.resume();
             startMusic();
@@ -349,8 +348,7 @@
             const btn = document.getElementById(id);
             btn.addEventListener("touchstart", e => {
                 e.preventDefault();
-                if (winner === "Handwerker" && Date.now() - winTime >= 5000) { resetGame(); return; }
-                if (winner === "Handwerker") return;
+                if (winner === "Handwerker") { resetGame(); return; }
                 if (!audioCtx) audioCtx = new AudioContext();
                 else if (audioCtx.state === "suspended") audioCtx.resume();
                 startMusic();
@@ -899,15 +897,17 @@
                 ctx.fillText(winner + " wins!", cx, winner === "Handwerker" ? cy - 40 : cy);
                 if (winner === "Handwerker") {
                     const elapsed = Date.now() - winTime;
-                    const countdown = Math.max(0, 10 - Math.floor(elapsed / 2000));
-                    if (Math.floor(skyTick * 3) % 2 === 0) {
-                        ctx.fillStyle = "#ffffff";
-                        ctx.font = "10px 'Press Start 2P'";
-                        ctx.fillText("Press key to retry", cx, cy + 14);
+                    if (elapsed >= 5000) {
+                        const countdown = Math.max(0, 10 - Math.floor((elapsed - 5000) / 1000));
+                        if (Math.floor(skyTick * 3) % 2 === 0) {
+                            ctx.fillStyle = "#ffffff";
+                            ctx.font = "10px 'Press Start 2P'";
+                            ctx.fillText("Press key to retry", cx, cy + 14);
+                        }
+                        ctx.fillStyle = countdown <= 3 ? "#ff6666" : "#FFD700";
+                        ctx.font = "36px 'Press Start 2P'";
+                        ctx.fillText(countdown, cx, cy + 72);
                     }
-                    ctx.fillStyle = countdown <= 3 ? "#ff6666" : "#FFD700";
-                    ctx.font = "36px 'Press Start 2P'";
-                    ctx.fillText(countdown, cx, cy + 72);
                 }
             }
         }
