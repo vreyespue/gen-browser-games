@@ -66,6 +66,7 @@
             onGround: false, facing: "right", frame: 0, frameTimer: 0
         };
         let reweScore = 0;
+        let cpuTeleportAt = 0; // declared here so spawnFruit() can reference it
 
         const WIN_SCORE = 20;
         let winner = null; // "Bo" | "Geissbock"
@@ -313,6 +314,7 @@
                 if (c.dist >= 160) { best = c; break; }
             }
             fruit.x = best.x; fruit.y = best.y;
+            cpuTeleportAt = (name === 'banana' || name === 'pear') ? Date.now() + 1000 : 0;
         }
 
         spawnFruit();
@@ -353,6 +355,79 @@
         let cpuJumpUntil = 0;
         let cpuJumpDir   = null;
         let cpuLastLevel = 'bottom';
+
+        // ── Teleport magic state ──────────────────────────────────────────────────────────
+        // cpuTeleportAt declared above near reweScore (needs to be before spawnFruit())
+        const warpParticles = [];
+        const teleportFlashes = [];
+        const WARP_OUT = ["#FFFFFF","#CC88FF","#8844FF","#FF88FF","#AAAAFF"]; // departure
+        const WARP_IN  = ["#00FFFF","#88FFFF","#FFFFFF","#AAFFDD","#CCFFAA"]; // arrival
+
+        function spawnWarpBurst(cx, cy, colors) {
+            for (let i = 0; i < 24; i++) {
+                const angle = (Math.PI * 2 / 24) * i + Math.random() * 0.15;
+                const speed = 2.5 + Math.random() * 5;
+                warpParticles.push({
+                    x: cx, y: cy,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    size: 3 + Math.random() * 6,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    rot: Math.random() * Math.PI,
+                    life: 1, alpha: 1
+                });
+            }
+            teleportFlashes.push({ x: cx, y: cy, life: 1 });
+        }
+
+        function updateWarpParticles() {
+            for (let i = warpParticles.length - 1; i >= 0; i--) {
+                const p = warpParticles[i];
+                p.x += p.vx; p.y += p.vy;
+                p.vx *= 0.90; p.vy *= 0.90;
+                p.life -= 0.04; p.alpha = Math.max(0, p.life);
+                if (p.life <= 0) warpParticles.splice(i, 1);
+            }
+            for (let i = teleportFlashes.length - 1; i >= 0; i--) {
+                teleportFlashes[i].life -= 0.07;
+                if (teleportFlashes[i].life <= 0) teleportFlashes.splice(i, 1);
+            }
+        }
+
+        function drawWarpParticles() {
+            warpParticles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rot + (1 - p.life) * 5);
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                const outer = p.size, inner = p.size * 0.3;
+                for (let k = 0; k < 8; k++) {
+                    const a = (k / 8) * Math.PI * 2;
+                    const r = k % 2 === 0 ? outer : inner;
+                    if (k === 0) ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+                    else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            });
+            teleportFlashes.forEach(f => {
+                const radius = 15 + 70 * (1 - f.life);
+                const alpha = f.life * 0.65;
+                const grd = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, radius);
+                grd.addColorStop(0, `rgba(230,200,255,${alpha})`);
+                grd.addColorStop(0.45, `rgba(150,60,255,${alpha * 0.55})`);
+                grd.addColorStop(1, `rgba(80,0,180,0)`);
+                ctx.save();
+                ctx.fillStyle = grd;
+                ctx.beginPath();
+                ctx.arc(f.x, f.y, radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+        }
 
         // Platforms: lower-center y=350 (char y=310), middle-center y=270 (char y=230),
         //            upper-left y=190 (char y=150), upper-right y=190 (char y=150)
@@ -503,6 +578,17 @@
             if (winner) return;
             if (!gameStarted) return;
 
+            // Geissbock magic teleport (apple or banana)
+            if (cpuTeleportAt > 0 && Date.now() >= cpuTeleportAt) {
+                spawnWarpBurst(geissbock.x + geissbock.width / 2, geissbock.y + geissbock.height / 2, WARP_OUT);
+                geissbock.x = fruit.x + FRUIT_SIZE / 2 - geissbock.width / 2;
+                geissbock.y = fruit.y + FRUIT_SIZE - geissbock.height;
+                geissbock.dy = 0; geissbock.onGround = true;
+                spawnWarpBurst(geissbock.x + geissbock.width / 2, geissbock.y + geissbock.height / 2, WARP_IN);
+                cpuTeleportAt = 0; cpuJumpUntil = 0; cpuJumpDir = null;
+                cpuLastLevel = detectLevel(geissbock.y);
+            }
+
             updateCPU();
             const cpuInput = { ArrowLeft: cpu.ArrowLeft, ArrowRight: cpu.ArrowRight, ArrowUp: cpu.ArrowUp };
             cpu.ArrowUp = false; // consume jump tap
@@ -510,6 +596,7 @@
             updateCharacter(geissbock, cpuInput);
             updateCharacter(rewe, keys);
             updateParticles();
+            updateWarpParticles();
 
             if (collidesWithFruit(geissbock)) {
                 geissbockScore++;
@@ -964,6 +1051,7 @@
             }
 
             drawParticles();
+            drawWarpParticles();
 
             // Scores
             ctx.fillStyle = "rgba(180,20,20,0.75)";
@@ -1000,7 +1088,7 @@
                 ctx.fillStyle = "#ffffff";
                 ctx.textAlign = "left";
                 ctx.font = "10px 'Press Start 2P', monospace";
-                ctx.fillText("Geissbock is strong! will do magic for bananas ...", bx + 18, by + 18);
+                ctx.fillText("Geissbock will do magic sometimes!", bx + 18, by + 18);
                 // blinking arrow
                 if (Math.floor(skyTick * 4) % 2 === 0) {
                     ctx.fillText(">", bx + bw - 26, by + bh - 10);
@@ -1036,6 +1124,7 @@
             reweScore = 0; geissbockScore = 0;
             winner = null; winTime = 0;
             particles.length = 0;
+            warpParticles.length = 0; teleportFlashes.length = 0; cpuTeleportAt = 0;
             musicStarted = false;
             gameStarted = true;
             spawnFruit();
