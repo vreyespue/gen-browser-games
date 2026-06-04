@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Victory!</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Georgia', serif;
+            background: #000;
+        }
+
+        #bg {
+            position: absolute;
+            inset: 0;
+            background: url('img/koeln-futuristic.png') center/cover no-repeat;
+            filter: brightness(0.75) saturate(1.2);
+        }
+
+        #vignette {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at center,
+                rgba(0,0,0,0.1) 0%,
+                rgba(0,0,20,0.65) 100%);
+        }
+
+        #confetti {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        #stage {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            gap: 32px;
+        }
+
+        .trophy {
+            font-size: 96px;
+            filter: drop-shadow(0 0 24px gold);
+            animation: float 2.4s ease-in-out infinite alternate;
+        }
+
+        @keyframes float {
+            from { transform: translateY(-12px) rotate(-4deg); }
+            to   { transform: translateY( 12px) rotate( 4deg); }
+        }
+
+        .line1 {
+            font-size: clamp(32px, 5vw, 64px);
+            color: #FFD700;
+            letter-spacing: 3px;
+            text-shadow:
+                0 0 12px rgba(255,215,0,0.9),
+                0 0 32px rgba(255,165,0,0.7),
+                0 0 64px rgba(255,100,0,0.4),
+                3px 3px 8px rgba(0,0,0,0.9);
+            animation: slideDown 1s cubic-bezier(.22,.68,0,1.2) both, shimmer 3s ease-in-out infinite alternate;
+        }
+
+        .line2 {
+            font-size: clamp(40px, 7vw, 88px);
+            color: #FFFFFF;
+            letter-spacing: 6px;
+            font-style: italic;
+            text-shadow:
+                0 0 16px rgba(180,220,255,0.95),
+                0 0 40px rgba(100,180,255,0.7),
+                0 0 72px rgba(80,140,255,0.4),
+                3px 3px 8px rgba(0,0,0,0.9);
+            animation: slideUp 1s 0.4s cubic-bezier(.22,.68,0,1.2) both, pulse 2.5s 1.4s ease-in-out infinite;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-60px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(60px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes shimmer {
+            from { text-shadow: 0 0 12px rgba(255,215,0,0.9), 0 0 32px rgba(255,165,0,0.7), 3px 3px 8px rgba(0,0,0,0.9); }
+            to   { text-shadow: 0 0 24px rgba(255,215,0,1.0), 0 0 56px rgba(255,165,0,1.0), 0 0 96px rgba(255,80,0,0.6), 3px 3px 8px rgba(0,0,0,0.9); }
+        }
+
+        @keyframes pulse {
+            0%,100% { transform: scale(1); }
+            50%      { transform: scale(1.04); }
+        }
+
+        #music-btn {
+            margin-top: 8px;
+            padding: 12px 36px;
+            font-size: 20px;
+            background: rgba(255,215,0,0.15);
+            color: #FFD700;
+            border: 2px solid rgba(255,215,0,0.7);
+            border-radius: 40px;
+            cursor: pointer;
+            letter-spacing: 2px;
+            backdrop-filter: blur(6px);
+            transition: background 0.2s, transform 0.15s;
+            animation: fadeIn 2s 1s both;
+        }
+
+        #music-btn:hover { background: rgba(255,215,0,0.35); transform: scale(1.06); }
+        #music-btn.hidden { opacity: 0; pointer-events: none; transition: opacity 0.4s; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="bg"></div>
+<div id="vignette"></div>
+<canvas id="confetti"></canvas>
+
+<div id="stage">
+    <div class="trophy">🏆</div>
+    <div class="line1">Thank you for playing!</div>
+    <div class="line2">Mach et joot!</div>
+    <button id="music-btn" onclick="launchMusic()">♪ Play Music</button>
+</div>
+
+<script>
+// ── Confetti ─────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('confetti');
+const ctx    = canvas.getContext('2d');
+
+function resize() { canvas.width = innerWidth; canvas.height = innerHeight; }
+resize();
+window.addEventListener('resize', resize);
+
+const COLORS = ['#FFD700','#FF6B6B','#4FC3F7','#81C784','#CE93D8','#FFB74D','#F06292','#80DEEA'];
+
+const pieces = Array.from({length: 180}, () => ({
+    x: Math.random() * innerWidth,
+    y: Math.random() * innerHeight - innerHeight,
+    w: Math.random() * 11 + 5,
+    h: Math.random() * 6  + 3,
+    color: COLORS[Math.random() * COLORS.length | 0],
+    vy: Math.random() * 2.5 + 1,
+    vx: (Math.random() - 0.5) * 1.8,
+    rot: Math.random() * 360,
+    rotV: (Math.random() - 0.5) * 6,
+    alpha: Math.random() * 0.5 + 0.5,
+}));
+
+(function tick() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach(p => {
+        p.y += p.vy; p.x += p.vx; p.rot += p.rotV;
+        if (p.y > canvas.height + 10) { p.y = -10; p.x = Math.random() * canvas.width; }
+        ctx.save();
+        ctx.translate(p.x + p.w / 2, p.y + p.h / 2);
+        ctx.rotate(p.rot * Math.PI / 180);
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+    });
+    requestAnimationFrame(tick);
+})();
+
+// ── Music (Web Audio API) ─────────────────────────────────────────────────────
+let ac, started = false;
+
+function launchMusic() {
+    if (started) return;
+    started = true;
+    document.getElementById('music-btn').classList.add('hidden');
+
+    ac = new (window.AudioContext || window.webkitAudioContext)();
+    if (ac.state === 'suspended') ac.resume();
+
+    playFanfare();
+}
+
+// Frequency from note name + octave (A4 = 440)
+function freq(note, oct) {
+    const MAP = {C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11};
+    return 440 * Math.pow(2, (MAP[note] + (oct - 4) * 12 - 9) / 12);
+}
+
+function tone(f, t0, dur, vol = 0.28, type = 'square') {
+    const osc  = ac.createOscillator();
+    const gain = ac.createGain();
+    const rev  = ac.createGain(); // simple soft envelope
+    osc.connect(gain); gain.connect(ac.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(f, t0);
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(vol, t0 + 0.02);
+    gain.gain.setValueAtTime(vol, t0 + dur - 0.06);
+    gain.gain.linearRampToValueAtTime(0, t0 + dur);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.01);
+}
+
+// Short triumphant fanfare, then loop the happy melody
+function playFanfare() {
+    const t = ac.currentTime + 0.05;
+    const Q = 60 / 160; // quarter note @ 160 BPM
+
+    // Ascending triumphal chord stab: C - E - G - C5
+    const fanfare = [
+        ['C',4,0.18], ['E',4,0.18], ['G',4,0.18],
+        ['C',5,0.55], ['G',4,0.12], ['C',5,0.80],
+    ];
+    let cur = t;
+    fanfare.forEach(([n,o,d]) => {
+        tone(freq(n,o), cur, d * Q * 2.0, 0.30, 'square');
+        tone(freq(n,o-1), cur, d * Q * 2.0, 0.10, 'triangle');
+        cur += d * Q * 2.0;
+    });
+
+    const delay = (cur - t) * 1000 + 80;
+    setTimeout(loopMelody, delay);
+}
+
+function loopMelody() {
+    if (!ac) return;
+
+    const BPM = 132;
+    const Q   = 60 / BPM;
+    const t   = ac.currentTime + 0.04;
+
+    // Joyful melody – "Freude schöner Götterfunken" (Ode to Joy, familiar 4-bar phrase)
+    const mel = [
+        //  note  oct  beats
+        ['E',5, 1],['E',5, 1],['F',5, 1],['G',5, 1],
+        ['G',5, 1],['F',5, 1],['E',5, 1],['D',5, 1],
+        ['C',5, 1],['C',5, 1],['D',5, 1],['E',5, 1],
+        ['E',5,1.5],['D',5,0.5],['D',5, 2],
+
+        ['E',5, 1],['E',5, 1],['F',5, 1],['G',5, 1],
+        ['G',5, 1],['F',5, 1],['E',5, 1],['D',5, 1],
+        ['C',5, 1],['C',5, 1],['D',5, 1],['E',5, 1],
+        ['D',5,1.5],['C',5,0.5],['C',5, 2],
+
+        // Variation – brighter repeat
+        ['D',5, 1],['D',5, 1],['E',5, 1],['C',5, 1],
+        ['D',5, 1],['E',5,0.5],['F',5,0.5],['E',5, 1],['C',5, 1],
+        ['D',5, 1],['E',5,0.5],['F',5,0.5],['E',5, 1],['D',5, 1],
+        ['C',5, 1],['D',5, 1],['G',4, 2],
+
+        ['E',5, 1],['E',5, 1],['F',5, 1],['G',5, 1],
+        ['G',5, 1],['F',5, 1],['E',5, 1],['D',5, 1],
+        ['C',5, 1],['C',5, 1],['D',5, 1],['E',5, 1],
+        ['D',5,1.5],['C',5,0.5],['C',5, 2],
+    ];
+
+    // Simple bassline (one chord per 2 beats)
+    const bass = [
+        ['C',3,2],['G',3,2],['A',3,2],['E',3,2],
+        ['F',3,2],['C',3,2],['G',3,2],['G',3,2],
+        ['C',3,2],['G',3,2],['A',3,2],['E',3,2],
+        ['F',3,2],['C',3,2],['G',3,4],
+
+        ['C',3,2],['G',3,2],['A',3,2],['E',3,2],
+        ['F',3,2],['C',3,2],['G',3,2],['G',3,2],
+        ['C',3,2],['G',3,2],['A',3,2],['E',3,2],
+        ['F',3,2],['C',3,2],['G',3,4],
+    ];
+
+    let mt = t;
+    mel.forEach(([n,o,b]) => {
+        tone(freq(n,o), mt, b * Q * 0.88, 0.22, 'square');
+        mt += b * Q;
+    });
+
+    let bt = t;
+    bass.forEach(([n,o,b]) => {
+        tone(freq(n,o), bt, b * Q * 0.80, 0.14, 'triangle');
+        bt += b * Q;
+    });
+
+    const totalMs = mel.reduce((s,[,,b]) => s + b * Q, 0) * 1000;
+    setTimeout(loopMelody, totalMs - 300);
+}
+
+// Try auto-start; browser may block until first gesture
+document.addEventListener('click', () => { if (!started) launchMusic(); }, {once: true});
+setTimeout(() => { try { launchMusic(); } catch(_) {} }, 600);
+</script>
+</body>
+</html>
