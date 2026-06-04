@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Bo vs Handwerker</title>
+    <title>Bo vs Hennes</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
         body { text-align: center; background: black; color: white; user-select: none; -webkit-user-select: none; }
@@ -45,7 +45,7 @@
     </style>
 </head>
 <body>
-    <h1>Bo vs Handwerker</h1>
+    <h1>Bo vs Hennes</h1>
     <canvas id="gameCanvas" width="600" height="416"></canvas>
     <div id="touchControls">
         <div class="btn-group">
@@ -68,7 +68,7 @@
         let reweScore = 0;
 
         const WIN_SCORE = 20;
-        let winner = null; // "Bo" | "Handwerker"
+        let winner = null; // "Bo" | "Hennes"
         let winTime = 0;
 
         const clouds = [
@@ -93,13 +93,13 @@
         }
         let skyTick = 0;
 
-        // Handwerker = CPU competitor
-        const handwerker = {
+        // Hennes = CPU competitor
+        const hennes = {
             x: 450, y: 360, width: 30, height: 40,
             speed: 5, dy: 0, gravity: 0.5, jumpPower: -10,
             onGround: false, facing: "right", frame: 0, frameTimer: 0
         };
-        let handwerkerScore = 0;
+        let hennesScore = 0;
 
         const platforms = [
             { x: 50,  y: 350, width: 200, height: 10 },
@@ -316,7 +316,7 @@
                 const fy = platform.y - FRUIT_SIZE;
                 const fcx = fx + FRUIT_SIZE / 2, fcy = fy + FRUIT_SIZE / 2;
                 const dr = Math.hypot(fcx - (rewe.x + 15),  fcy - (rewe.y + 20));
-                const dm = Math.hypot(fcx - (handwerker.x + 15), fcy - (handwerker.y + 20));
+                const dm = Math.hypot(fcx - (hennes.x + 15), fcy - (hennes.y + 20));
                 return { x: fx, y: fy, dist: Math.min(dr, dm) };
             }
 
@@ -335,7 +335,7 @@
         const keys = {};
         let gameStarted = false;
         window.addEventListener("keydown", e => {
-            if (winner === "Handwerker") { resetGame(); return; }
+            if (winner === "Hennes") { resetGame(); return; }
             if (!audioCtx) audioCtx = new AudioContext();
             else if (audioCtx.state === "suspended") audioCtx.resume();
             startMusic();
@@ -348,7 +348,7 @@
             const btn = document.getElementById(id);
             btn.addEventListener("touchstart", e => {
                 e.preventDefault();
-                if (winner === "Handwerker") { resetGame(); return; }
+                if (winner === "Hennes") { resetGame(); return; }
                 if (!audioCtx) audioCtx = new AudioContext();
                 else if (audioCtx.state === "suspended") audioCtx.resume();
                 startMusic();
@@ -382,7 +382,7 @@
 
         function updateCPU() {
             const now = Date.now();
-            const px = handwerker.x, py = handwerker.y, onGround = handwerker.onGround;
+            const px = hennes.x, py = hennes.y, onGround = hennes.onGround;
             const fx = fruit.x, fy = fruit.y;
 
             if (onGround) cpuLastLevel = detectLevel(py);
@@ -501,15 +501,15 @@
             const cpuInput = { ArrowLeft: cpu.ArrowLeft, ArrowRight: cpu.ArrowRight, ArrowUp: cpu.ArrowUp };
             cpu.ArrowUp = false; // consume jump tap
 
-            updateCharacter(handwerker, cpuInput);
+            updateCharacter(hennes, cpuInput);
             updateCharacter(rewe, keys);
             updateParticles();
 
-            if (collidesWithFruit(handwerker)) {
-                handwerkerScore++;
+            if (collidesWithFruit(hennes)) {
+                hennesScore++;
                 spawnParticles(fruit.x + FRUIT_SIZE / 2, fruit.y + FRUIT_SIZE / 2);
-                playFruitSound("handwerker");
-                if (handwerkerScore >= WIN_SCORE) { winner = "Handwerker"; winTime = Date.now(); stopMusic(); playWinSound(); return; }
+                playFruitSound("hennes");
+                if (hennesScore >= WIN_SCORE) { winner = "Hennes"; winTime = Date.now(); stopMusic(); playWinSound(); return; }
                 spawnFruit();
             } else if (collidesWithFruit(rewe)) {
                 reweScore++;
@@ -520,8 +520,8 @@
             }
         }
 
-        // ── Draw Handwerker ────────────────────────────────────────────────────────
-        function drawHandwerkerChar(ox, y, frame) {
+        // ── Draw Hennes ────────────────────────────────────────────────────────
+        function drawHennesChar(ox, y, frame) {
             const running = frame === 1 || frame === 2;
             if (running) y -= 3;
 
@@ -600,30 +600,30 @@
             }
         }
 
-        function drawHandwerker() {
-            const x = Math.floor(handwerker.x);
-            const y = Math.floor(handwerker.y);
-            const running = handwerker.frame === 1 || handwerker.frame === 2;
-            const cx = x + handwerker.width / 2;
-            const cy = y + handwerker.height * 0.55;
+        function drawHennes() {
+            const x = Math.floor(hennes.x);
+            const y = Math.floor(hennes.y);
+            const running = hennes.frame === 1 || hennes.frame === 2;
+            const cx = x + hennes.width / 2;
+            const cy = y + hennes.height * 0.55;
 
             ctx.save();
-            if (handwerker.facing === "left") {
-                ctx.translate(x + handwerker.width, 0);
+            if (hennes.facing === "left") {
+                ctx.translate(x + hennes.width, 0);
                 ctx.scale(-1, 1);
                 if (running) {
-                    ctx.translate(handwerker.width / 2, cy);
+                    ctx.translate(hennes.width / 2, cy);
                     ctx.rotate(0.18);
-                    ctx.translate(-handwerker.width / 2, -cy);
+                    ctx.translate(-hennes.width / 2, -cy);
                 }
-                drawHandwerkerChar(0, y, handwerker.frame);
+                drawHennesChar(0, y, hennes.frame);
             } else {
                 if (running) {
                     ctx.translate(cx, cy);
                     ctx.rotate(0.18);
                     ctx.translate(-cx, -cy);
                 }
-                drawHandwerkerChar(x, y, handwerker.frame);
+                drawHennesChar(x, y, hennes.frame);
             }
             ctx.restore();
         }
@@ -828,7 +828,7 @@
             if (skyGoat.x > canvas.width + 60) skyGoat.x = -60;
             drawGeissbock(skyGoat.x, skyGoat.y);
 
-            drawHandwerker();
+            drawHennes();
             drawRewe();
 
             drawGround();
@@ -858,7 +858,7 @@
             ctx.fillStyle = "#fff";
             ctx.font = "bold 16px Arial";
             ctx.textAlign = "left";
-            ctx.fillText("🎮 CPU: " + handwerkerScore, canvas.width - 143, 27);
+            ctx.fillText("🎮 CPU: " + hennesScore, canvas.width - 143, 27);
 
             if (!gameStarted) {
                 const bx = 20, by = 135, bw = 560, bh = 25;
@@ -880,7 +880,7 @@
                 ctx.fillStyle = "#ffffff";
                 ctx.textAlign = "left";
                 ctx.font = "10px 'Press Start 2P', monospace";
-                ctx.fillText("Halli hallo! Press the left/right keys to start!", bx + 18, by + 18);
+                ctx.fillText("Hennes is strong! will do some magic for bananas ...", bx + 18, by + 18);
                 // blinking arrow
                 if (Math.floor(skyTick * 4) % 2 === 0) {
                     ctx.fillText(">", bx + bw - 26, by + bh - 10);
@@ -894,8 +894,8 @@
                 const cx = canvas.width / 2, cy = canvas.height / 2;
                 ctx.fillStyle = "#FFD700";
                 ctx.font = "28px 'Press Start 2P'";
-                ctx.fillText(winner + " wins!", cx, winner === "Handwerker" ? cy - 40 : cy);
-                if (winner === "Handwerker") {
+                ctx.fillText(winner + " wins!", cx, winner === "Hennes" ? cy - 40 : cy);
+                if (winner === "Hennes") {
                     const elapsed = Date.now() - winTime;
                     const countdown = Math.max(0, 10 - Math.floor(elapsed / 2000));
                     if (Math.floor(skyTick * 3) % 2 === 0) {
@@ -912,8 +912,8 @@
 
         function resetGame() {
             Object.assign(rewe,  { x: 135, y: 310, dy: 0, onGround: false, facing: "right", frame: 0, frameTimer: 0 });
-            Object.assign(handwerker, { x: 450, y: 360, dy: 0, onGround: false, facing: "right", frame: 0, frameTimer: 0 });
-            reweScore = 0; handwerkerScore = 0;
+            Object.assign(hennes, { x: 450, y: 360, dy: 0, onGround: false, facing: "right", frame: 0, frameTimer: 0 });
+            reweScore = 0; hennesScore = 0;
             winner = null; winTime = 0;
             particles.length = 0;
             musicStarted = false;
