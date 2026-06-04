@@ -734,46 +734,31 @@
 
         // ── Draw scene ────────────────────────────────────────────────────────
         function drawCloud(x, y, r) {
-            ctx.fillStyle = "rgba(255,255,255,0.85)";
+            ctx.fillStyle = "rgba(200,205,215,0.88)";
             ctx.beginPath();
-            ctx.arc(x,       y,     r,       0, Math.PI * 2);
-            ctx.arc(x + r,   y - 8, r * 0.7, 0, Math.PI * 2);
-            ctx.arc(x - r,   y - 4, r * 0.6, 0, Math.PI * 2);
-            ctx.arc(x + r*1.7, y,   r * 0.55, 0, Math.PI * 2);
+            ctx.arc(x,         y,     r,        0, Math.PI * 2);
+            ctx.arc(x + r,     y - 8, r * 0.7,  0, Math.PI * 2);
+            ctx.arc(x - r,     y - 4, r * 0.6,  0, Math.PI * 2);
+            ctx.arc(x + r*1.7, y,     r * 0.55, 0, Math.PI * 2);
             ctx.fill();
         }
 
-        function drawGeissbock(x, y) {
-            const s = 1.35;
+        function drawThunder(x, y) {
             ctx.save();
             ctx.translate(x, y);
-            ctx.scale(s, s);
-            const w = "rgba(255,255,255,0.85)";
-            const f = (dx, dy, dw, dh) => { ctx.fillStyle = w; ctx.fillRect(dx, dy, dw, dh); };
-            // body
-            f(18, 12, 22, 13);
-            // head
-            f( 0,  8, 20, 13);
-            // neck connection
-            f(16, 10,  6,  9);
-            // horns
-            f( 4,  0,  4,  9);
-            f( 2,  3,  4,  4);
-            f(10,  0,  4,  7);
-            f(10,  4,  5,  3);
-            // beard
-            f( 1, 20,  6,  7);
-            // legs
-            f(20, 25,  4, 11);
-            f(26, 25,  4, 11);
-            f(32, 25,  4, 11);
-            // tail
-            f(39,  9,  5,  4);
-            f(41,  7,  4,  4);
-            // "FC Köln" label
-            ctx.font = "bold 7px 'Press Start 2P', monospace";
-            ctx.fillStyle = w;
-            ctx.fillText("FC Köln", 0, 50);
+            ctx.fillStyle = "#ffd700";
+            const f = (dx, dy, dw, dh) => ctx.fillRect(dx, dy, dw, dh);
+            // top arm — wide, slanting right
+            f( 8,  0, 16,  4);
+            f( 6,  4, 14,  4);
+            f( 4,  8, 12,  4);
+            // centre cross bar
+            f( 2, 12, 20,  5);
+            // bottom arm — slanting right to tip
+            f(10, 17, 12,  4);
+            f(12, 21, 10,  4);
+            f(14, 25,  8,  4);
+            f(16, 29,  6,  4);
             ctx.restore();
         }
 
@@ -862,7 +847,7 @@
 
         function draw() {
             // Sky
-            ctx.fillStyle = "#87CEEB";
+            ctx.fillStyle = "#5a9dbf";
             ctx.fillRect(0, 0, canvas.width, FLOOR);
             skyTick += 0.012;
             skyDots.forEach(d => {
@@ -879,7 +864,7 @@
 
             skyGoat.x += skyGoat.speed;
             if (skyGoat.x > canvas.width + 60) skyGoat.x = -60;
-            drawGeissbock(skyGoat.x, skyGoat.y);
+            drawThunder(skyGoat.x, skyGoat.y);
 
             drawPunky();
             drawRewe();
