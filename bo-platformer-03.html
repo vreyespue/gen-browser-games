@@ -97,7 +97,7 @@
         // Geissbock = CPU competitor
         const geissbock = {
             x: 450, y: 360, width: 30, height: 40,
-            speed: 5, dy: 0, gravity: 0.5, jumpPower: -10,
+            speed: 5, dy: 0, gravity: 0.5, jumpPower: -11,
             onGround: false, facing: "left", frame: 0, frameTimer: 0
         };
         let geissbockScore = 0;
@@ -314,7 +314,7 @@
                 if (c.dist >= 160) { best = c; break; }
             }
             fruit.x = best.x; fruit.y = best.y;
-            cpuTeleportAt = (name === 'banana' || name === 'pear') ? Date.now() + 1000 : 0;
+            cpuTeleportAt = (name === 'banana' || name === 'pear') ? Date.now() + 1250 : 0;
         }
 
         spawnFruit();
@@ -593,6 +593,7 @@
             const cpuInput = { ArrowLeft: cpu.ArrowLeft, ArrowRight: cpu.ArrowRight, ArrowUp: cpu.ArrowUp };
             cpu.ArrowUp = false; // consume jump tap
 
+            geissbock.speed = geissbock.onGround ? 3 : 5;
             updateCharacter(geissbock, cpuInput);
             updateCharacter(rewe, keys);
             updateParticles();
