@@ -139,50 +139,54 @@
             musicMaster.gain.setValueAtTime(1, audioCtx.currentTime);
             musicMaster.connect(audioCtx.destination);
 
-            const BPM  = 128;
+            const BPM  = 158;
             const BEAT = 60 / BPM;
 
-            // "Shadow Vault" — dark Phrygian theme, tritones, chromatic descents
+            // "Cave Crawler" — A minor, bouncy hook with rests, low drip section
             const intro = [
-                // A4 . A4 Bb4 (Phrygian half-step, unsettling)
-                [440, 0.5], [0, 0.5], [440, 0.5], [466, 0.5],
-                // G4~~~ .
-                [392, 1.5], [0, 0.5],
-                // F4 F#4 G4 . (chromatic creep up)
-                [349, 0.5], [370, 0.5], [392, 0.5], [0, 0.5],
-                // A4~~~ (long ominous hold)
-                [440, 2], [0, 1],
+                // hook: A4 . C5 D5 (the cave motif — short rest gives bounce)
+                [440, 0.5], [0, 0.5], [523, 0.5], [587, 0.5],
+                // E5~~~ .
+                [659, 1.5], [0, 0.5],
+                // chromatic pickup: F#4 G4 A4 .
+                [370, 0.5], [392, 0.5], [440, 0.5], [0, 0.5],
+                // A4~~~
+                [440, 2],
             ];
             const phraseA = [
-                // A5 . G5 (minor descent begins)
-                [880, 1], [0, 0.5], [784, 0.5],
-                // F5 E5 .
-                [698, 1], [659, 0.5], [0, 0.5],
-                // D5 C5 B4 A4 (falling minor line)
-                [587, 0.5], [523, 0.5], [494, 0.5], [440, 0.5],
+                // hook
+                [440, 0.5], [0, 0.5], [523, 0.5], [587, 0.5],
+                // E5~~~ D5 .
+                [659, 1], [587, 0.5], [0, 0.5],
+                // response: C5 B4 C5 A4
+                [523, 0.5], [494, 0.5], [523, 0.5], [440, 0.5],
                 // A4~~~ .
-                [440, 2], [0, 1],
-                // A4 . Eb5~~~ (tritone — the devil's interval)
-                [440, 0.5], [0, 0.5], [622, 1.5],
-                // E5 Eb5 D5 . (resolve teased, denied)
-                [659, 0.5], [622, 0.5], [587, 0.5], [0, 0.5],
-                // C5~~~ .
-                [523, 2], [0, 1],
+                [440, 2], [0, 0.5],
+                // hook climbs an octave: E5 . G5 A5
+                [659, 0.5], [0, 0.5], [784, 0.5], [880, 0.5],
+                // B5~~~ A5 .
+                [988, 1], [880, 0.5], [0, 0.5],
+                // chromatic fall: G5 F#5 F5 E5 Eb5 D5 C5 B4
+                [784, 0.5], [740, 0.5], [698, 0.5], [659, 0.5],
+                [622, 0.5], [587, 0.5], [523, 0.5], [494, 0.5],
+                // Bb4 A4~~~
+                [466, 0.5], [440, 1.5],
             ];
             const bridge = [
-                // A3~~~ . (low, ominous drop)
-                [220, 1.5], [0, 0.5],
-                // D4 F4 Ab4~~~ . (diminished arpeggio)
-                [294, 1], [349, 1], [415, 1.5], [0, 0.5],
-                // A4 . Bb4 C5 (Phrygian climb)
-                [440, 0.5], [0, 0.5], [466, 0.5], [523, 0.5],
-                // Eb5~~~ (tritone peak, maximum tension)
-                [622, 3], [0, 0.5],
-                // G5 F#5 F5 E5 Eb5 D5 Db5 C5 (chromatic waterfall)
-                [784, 0.5], [740, 0.5], [698, 0.5], [659, 0.5],
-                [622, 0.5], [587, 0.5], [554, 0.5], [523, 0.5],
-                // B4 Bb4 A4~~~ (Phrygian landing)
-                [494, 0.5], [466, 0.5], [440, 2],
+                // low cave drip: A3 .. A3 C4 . D4 . B3 A3~~~
+                [220, 0.5], [0, 1], [220, 0.5],
+                [262, 0.5], [0, 0.5], [294, 0.5], [0, 0.5],
+                [247, 0.5], [220, 1.5],
+                // rapid hook fragments stacked (builds energy)
+                [440, 0.5], [523, 0.5], [440, 0.5], [0, 0.5],
+                [494, 0.5], [587, 0.5], [494, 0.5], [0, 0.5],
+                [523, 0.5], [659, 0.5], [784, 0.5], [880, 0.5],
+                // A5~~~ .
+                [880, 1.5], [0, 0.5],
+                // final cascade: A5 Ab5 G5 F#5 F5 E5 Eb5 D5 C5 B4 A4~~~
+                [880, 0.5], [831, 0.5], [784, 0.5], [740, 0.5],
+                [698, 0.5], [659, 0.5], [622, 0.5], [587, 0.5],
+                [523, 0.5], [494, 0.5], [440, 2],
             ];
             const melody = [
                 ...intro,
