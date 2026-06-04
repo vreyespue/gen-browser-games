@@ -831,34 +831,69 @@
             ctx.restore();
         }
 
+        // Palette of brick face colours — varied reds, oranges, earthy tones
+        const BRICK_COLORS = [
+            "#9B3A18", "#8B2E10", "#A54520", "#7A2E10",
+            "#B05225", "#C0602A", "#7C3318", "#A03820",
+        ];
+        const MORTAR_COLOR = "#2E1A0A";
+
         function drawBrickWall(wx, wy, ww, wh, brickW, brickH) {
-            const BRICK   = "#8B3A1A"; // warm dark red brick
-            const MORTAR  = "#4A2810"; // deep brown mortar
             // Fill entire area with mortar colour first
-            ctx.fillStyle = MORTAR;
+            ctx.fillStyle = MORTAR_COLOR;
             ctx.fillRect(wx, wy, ww, wh);
-            // Draw each brick row
+
             for (let row = 0; row * brickH < wh; row++) {
                 const by = wy + row * brickH;
                 const offset = (row % 2 === 0) ? 0 : Math.floor(brickW / 2);
+
                 for (let col = -1; col * brickW < ww + brickW; col++) {
                     const bx = wx + col * brickW + offset;
-                    // Clip to wall bounds
-                    const cx2 = Math.max(bx + 1, wx);
-                    const cy2 = Math.max(by + 1, wy);
-                    const cw = Math.min(bx + brickW - 1, wx + ww) - cx2;
-                    const ch = Math.min(by + brickH - 1, wy + wh) - cy2;
-                    if (cw <= 0 || ch <= 0) continue;
-                    ctx.fillStyle = BRICK;
-                    ctx.fillRect(cx2, cy2, cw, ch);
-                    // Highlight top-left edge (lighter)
-                    ctx.fillStyle = "rgba(255,180,120,0.18)";
-                    ctx.fillRect(cx2, cy2, cw, 1);       // top edge
-                    ctx.fillRect(cx2, cy2, 1, ch);       // left edge
-                    // Shadow bottom-right edge (darker)
-                    ctx.fillStyle = "rgba(0,0,0,0.30)";
-                    ctx.fillRect(cx2, cy2 + ch - 1, cw, 1); // bottom edge
-                    ctx.fillRect(cx2 + cw - 1, cy2, 1, ch); // right edge
+
+                    // Clip brick face to wall bounds (1px mortar gap)
+                    const fx = Math.max(bx + 1, wx + 1);
+                    const fy = Math.max(by + 1, wy + 1);
+                    const fw = Math.min(bx + brickW - 1, wx + ww - 1) - fx;
+                    const fh = Math.min(by + brickH - 1, wy + wh - 1) - fy;
+                    if (fw <= 0 || fh <= 0) continue;
+
+                    // Pick a deterministic colour per brick position
+                    const colorIdx = ((row * 7 + col * 3) ^ (col * 5)) & 7;
+                    ctx.fillStyle = BRICK_COLORS[colorIdx];
+                    ctx.fillRect(fx, fy, fw, fh);
+
+                    // Inner texture: faint diagonal grain lines
+                    ctx.fillStyle = "rgba(0,0,0,0.10)";
+                    for (let g = 2; g < fw + fh; g += 4) {
+                        const lx1 = fx + Math.min(g, fw - 1);
+                        const ly1 = fy;
+                        const lx2 = fx;
+                        const ly2 = fy + Math.min(g, fh - 1);
+                        if (lx1 >= fx && ly2 >= fy)
+                            ctx.fillRect(Math.min(lx1, fx + fw - 1), ly1, 1, 1);
+                    }
+
+                    // Specular spot top-left (small bright fleck)
+                    if (fw >= 4 && fh >= 3) {
+                        ctx.fillStyle = "rgba(255,200,150,0.22)";
+                        ctx.fillRect(fx + 1, fy + 1, Math.min(4, fw - 2), 1);
+                        ctx.fillRect(fx + 1, fy + 1, 1, Math.min(2, fh - 2));
+                    }
+
+                    // Highlight: top edge
+                    ctx.fillStyle = "rgba(255,160,90,0.28)";
+                    ctx.fillRect(fx, fy, fw, 1);
+
+                    // Shadow: bottom + right edges
+                    ctx.fillStyle = "rgba(0,0,0,0.40)";
+                    ctx.fillRect(fx, fy + fh - 1, fw, 1);
+                    ctx.fillRect(fx + fw - 1, fy, 1, fh);
+
+                    // Occasional dark speckle (weathering)
+                    if (colorIdx % 3 === 0 && fw > 6) {
+                        ctx.fillStyle = "rgba(0,0,0,0.18)";
+                        ctx.fillRect(fx + Math.floor(fw * 0.55), fy + 1, 2, 2);
+                    }
                 }
             }
         }
