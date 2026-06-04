@@ -61,7 +61,7 @@
 
         // Rewe = human player (arrow keys) — red dot, yellow arms/legs
         const rewe = {
-            x: 135, y: 310, width: 30, height: 40,
+            x: 420, y: 310, width: 30, height: 40,
             speed: 5, dy: 0, gravity: 0.5, jumpPower: -10,
             onGround: false, facing: "right", frame: 0, frameTimer: 0
         };
@@ -95,7 +95,7 @@
 
         // Punky = CPU competitor
         const punky = {
-            x: 550, y: 360, width: 30, height: 40,
+            x: 135, y: 360, width: 30, height: 40,
             speed: 5, dy: 0, gravity: 0.5, jumpPower: -10,
             onGround: false, facing: "right", frame: 0, frameTimer: 0
         };
@@ -921,8 +921,8 @@
         }
 
         function resetGame() {
-            Object.assign(rewe,  { x: 135, y: 310, dy: 0, onGround: false, facing: "right", frame: 0, frameTimer: 0 });
-            Object.assign(punky, { x: 550, y: 360, dy: 0, onGround: false, facing: "right", frame: 0, frameTimer: 0 });
+            Object.assign(rewe,  { x: 420, y: 310, dy: 0, onGround: false, facing: "right", frame: 0, frameTimer: 0 });
+            Object.assign(punky, { x: 135, y: 360, dy: 0, onGround: false, facing: "right", frame: 0, frameTimer: 0 });
             reweScore = 0; punkyScore = 0;
             winner = null; winTime = 0;
             particles.length = 0;
