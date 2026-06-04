@@ -97,7 +97,7 @@
         const handwerker = {
             x: 450, y: 360, width: 30, height: 40,
             speed: 5, dy: 0, gravity: 0.5, jumpPower: -10,
-            onGround: false, facing: "right", frame: 0, frameTimer: 0
+            onGround: false, facing: "left", frame: 0, frameTimer: 0
         };
         let handwerkerScore = 0;
 
@@ -912,7 +912,7 @@
 
         function resetGame() {
             Object.assign(rewe,  { x: 135, y: 310, dy: 0, onGround: false, facing: "right", frame: 0, frameTimer: 0 });
-            Object.assign(handwerker, { x: 450, y: 360, dy: 0, onGround: false, facing: "right", frame: 0, frameTimer: 0 });
+            Object.assign(handwerker, { x: 450, y: 360, dy: 0, onGround: false, facing: "left", frame: 0, frameTimer: 0 });
             reweScore = 0; handwerkerScore = 0;
             winner = null; winTime = 0;
             particles.length = 0;
