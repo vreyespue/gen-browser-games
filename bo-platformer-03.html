@@ -78,7 +78,7 @@
             { x: 490, y: 60,  r: 25, speed: 0.15 },
         ];
 
-        const skyDom = { x: 680, y: 30, speed: 0.18 };
+        const skyDom = { x: 680, y: 45, speed: 0.18 };
 
         // Pre-generate sparse pixel dots for sky texture
         const skyDots = [];
@@ -746,6 +746,7 @@
         function drawSkyDom(x, y) {
             ctx.save();
             ctx.translate(x, y);
+            ctx.scale(1, 0.75);
             // Cloudy grey-white palette
             const WH = "rgba(160,160,160,0.85)"; // matches cloud colour exactly
             const SH = "rgba(25,30,45,0.80)";    // near-black shadow / tracery voids
