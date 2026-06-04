@@ -831,44 +831,45 @@
             ctx.restore();
         }
 
+        function drawBrickWall(wx, wy, ww, wh, brickW, brickH) {
+            const BRICK   = "#8B3A1A"; // warm dark red brick
+            const MORTAR  = "#4A2810"; // deep brown mortar
+            // Fill entire area with mortar colour first
+            ctx.fillStyle = MORTAR;
+            ctx.fillRect(wx, wy, ww, wh);
+            // Draw each brick row
+            for (let row = 0; row * brickH < wh; row++) {
+                const by = wy + row * brickH;
+                const offset = (row % 2 === 0) ? 0 : Math.floor(brickW / 2);
+                for (let col = -1; col * brickW < ww + brickW; col++) {
+                    const bx = wx + col * brickW + offset;
+                    // Clip to wall bounds
+                    const cx2 = Math.max(bx + 1, wx);
+                    const cy2 = Math.max(by + 1, wy);
+                    const cw = Math.min(bx + brickW - 1, wx + ww) - cx2;
+                    const ch = Math.min(by + brickH - 1, wy + wh) - cy2;
+                    if (cw <= 0 || ch <= 0) continue;
+                    ctx.fillStyle = BRICK;
+                    ctx.fillRect(cx2, cy2, cw, ch);
+                    // Highlight top-left edge (lighter)
+                    ctx.fillStyle = "rgba(255,180,120,0.18)";
+                    ctx.fillRect(cx2, cy2, cw, 1);       // top edge
+                    ctx.fillRect(cx2, cy2, 1, ch);       // left edge
+                    // Shadow bottom-right edge (darker)
+                    ctx.fillStyle = "rgba(0,0,0,0.30)";
+                    ctx.fillRect(cx2, cy2 + ch - 1, cw, 1); // bottom edge
+                    ctx.fillRect(cx2 + cw - 1, cy2, 1, ch); // right edge
+                }
+            }
+        }
+
         function drawGround() {
             const gw = canvas.width, gy = FLOOR, gh = canvas.height - FLOOR;
-            // Dirt base with block grid
-            ctx.fillStyle = "#5a3515";
-            ctx.fillRect(0, gy, gw, gh);
-            ctx.fillStyle = "#3d1f08";
-            for (let x = 0; x <= gw; x += 16) ctx.fillRect(x, gy + 8, 1, gh - 8);
-            ctx.fillRect(0, gy + 8, gw, 1);
-            // Grass strip
-            ctx.fillStyle = "#2e7d1e";
-            ctx.fillRect(0, gy, gw, 7);
-            ctx.fillStyle = "#3da02a";
-            ctx.fillRect(0, gy, gw, 2);
-            // Grass tufts
-            ctx.fillStyle = "#3d8c28";
-            for (let x = 5; x < gw; x += 14) ctx.fillRect(x, gy - 3, 2, 4);
-            for (let x = 11; x < gw; x += 14) ctx.fillRect(x, gy - 2, 2, 3);
+            drawBrickWall(0, gy, gw, gh, 20, 10);
         }
 
         function drawPlatform(p) {
-            const bw = 16, bh = 10, ty = p.y;
-            ctx.fillStyle = "#c96530";
-            ctx.fillRect(p.x, ty, p.width, bh);
-            ctx.fillStyle = "#7a3010";
-            ctx.fillRect(p.x, ty + bh - 2, p.width, 2);
-            ctx.fillRect(p.x, ty, 1, bh);
-            ctx.fillRect(p.x + p.width - 1, ty, 1, bh);
-            ctx.fillRect(p.x + 1, ty + 6, p.width - 2, 1);
-            for (let x = p.x + bw; x < p.x + p.width - 1; x += bw) ctx.fillRect(x, ty + 1, 1, 5);
-            for (let x = p.x + bw / 2; x < p.x + p.width - 1; x += bw) ctx.fillRect(x, ty + 7, 1, 2);
-            // Grass top
-            ctx.fillStyle = "#5aad3f";
-            ctx.fillRect(p.x, ty, p.width, 5);
-            ctx.fillStyle = "#78c856";
-            ctx.fillRect(p.x, ty, p.width, 2);
-            ctx.fillStyle = "#3d8c28";
-            for (let x = p.x + 3; x < p.x + p.width - 2; x += 10) ctx.fillRect(x, ty - 3, 2, 4);
-            for (let x = p.x + 7; x < p.x + p.width - 2; x += 10) ctx.fillRect(x, ty - 2, 2, 3);
+            drawBrickWall(p.x, p.y, p.width, p.height, 16, p.height);
         }
 
         function draw() {
