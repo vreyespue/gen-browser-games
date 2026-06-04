@@ -184,13 +184,13 @@ const pieces = Array.from({length: 180}, () => ({
 // ── Music (Web Audio API) ─────────────────────────────────────────────────────
 let ac, started = false;
 
-function launchMusic() {
+async function launchMusic() {
     if (started) return;
     started = true;
     document.getElementById('music-btn').classList.add('hidden');
 
     ac = new (window.AudioContext || window.webkitAudioContext)();
-    if (ac.state === 'suspended') ac.resume();
+    if (ac.state === 'suspended') await ac.resume();
 
     playFanfare();
 }
@@ -298,9 +298,8 @@ function loopMelody() {
     setTimeout(loopMelody, totalMs - 300);
 }
 
-// Try auto-start; browser may block until first gesture
+// Music requires a user gesture — button or any click starts it
 document.addEventListener('click', () => { if (!started) launchMusic(); }, {once: true});
-setTimeout(() => { try { launchMusic(); } catch(_) {} }, 600);
 </script>
 </body>
 </html>
