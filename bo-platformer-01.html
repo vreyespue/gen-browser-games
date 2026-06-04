@@ -335,7 +335,8 @@
         const keys = {};
         let gameStarted = false;
         window.addEventListener("keydown", e => {
-            if (winner === "Handwerker") { resetGame(); return; }
+            if (winner === "Handwerker" && Date.now() - winTime >= 5000) { resetGame(); return; }
+            if (winner === "Handwerker") return;
             if (!audioCtx) audioCtx = new AudioContext();
             else if (audioCtx.state === "suspended") audioCtx.resume();
             startMusic();
@@ -348,7 +349,8 @@
             const btn = document.getElementById(id);
             btn.addEventListener("touchstart", e => {
                 e.preventDefault();
-                if (winner === "Handwerker") { resetGame(); return; }
+                if (winner === "Handwerker" && Date.now() - winTime >= 5000) { resetGame(); return; }
+                if (winner === "Handwerker") return;
                 if (!audioCtx) audioCtx = new AudioContext();
                 else if (audioCtx.state === "suspended") audioCtx.resume();
                 startMusic();

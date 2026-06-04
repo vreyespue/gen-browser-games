@@ -322,7 +322,8 @@
         const keys = {};
         let gameStarted = false;
         window.addEventListener("keydown", e => {
-            if (winner === "Punky") { resetGame(); return; }
+            if (winner === "Punky" && Date.now() - winTime >= 5000) { resetGame(); return; }
+            if (winner === "Punky") return;
             if (!audioCtx) audioCtx = new AudioContext();
             else if (audioCtx.state === "suspended") audioCtx.resume();
             startMusic();
@@ -335,7 +336,8 @@
             const btn = document.getElementById(id);
             btn.addEventListener("touchstart", e => {
                 e.preventDefault();
-                if (winner === "Punky") { resetGame(); return; }
+                if (winner === "Punky" && Date.now() - winTime >= 5000) { resetGame(); return; }
+                if (winner === "Punky") return;
                 if (!audioCtx) audioCtx = new AudioContext();
                 else if (audioCtx.state === "suspended") audioCtx.resume();
                 startMusic();

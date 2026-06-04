@@ -293,8 +293,8 @@
             });
         }
 
-        function spawnFruit() {
-            const name = fruitNames[Math.floor(Math.random() * fruitNames.length)];
+        function spawnFruit(forceName) {
+            const name = forceName || fruitNames[Math.floor(Math.random() * fruitNames.length)];
             fruit.name = name; fruit.img = fruitImages[name];
 
             function candidate() {
@@ -325,13 +325,12 @@
             cpuTeleportAt = (name === 'banana' || name === 'pear') ? Date.now() + 1250 : 0;
         }
 
-        spawnFruit();
-
-        // Human player keys
+        spawnFruit('apple');
         const keys = {};
         let gameStarted = false;
         window.addEventListener("keydown", e => {
-            if (winner === "Geissbock") { resetGame(); return; }
+            if (winner === "Geissbock" && Date.now() - winTime >= 5000) { resetGame(); return; }
+            if (winner === "Geissbock") return;
             if (!audioCtx) audioCtx = new AudioContext();
             else if (audioCtx.state === "suspended") audioCtx.resume();
             startMusic();
@@ -344,7 +343,8 @@
             const btn = document.getElementById(id);
             btn.addEventListener("touchstart", e => {
                 e.preventDefault();
-                if (winner === "Geissbock") { resetGame(); return; }
+                if (winner === "Geissbock" && Date.now() - winTime >= 5000) { resetGame(); return; }
+                if (winner === "Geissbock") return;
                 if (!audioCtx) audioCtx = new AudioContext();
                 else if (audioCtx.state === "suspended") audioCtx.resume();
                 startMusic();
