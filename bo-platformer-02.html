@@ -418,11 +418,11 @@
                     const dist = moveToX(450);
                     if (dist < 20 && onGround) initiateJump(null, 0);
                 } else if (playerLevel === 'bottom') {
-                    const dist = moveToX(400);
+                    const dist = moveToX(370);
                     if (dist < 15) initiateJump('left', 500);
                 } else if (playerLevel === 'middle' && fruitLevel === 'top') {
-                    const dist = moveToX(250);
-                    if (dist < 15) initiateJump('right', 320);
+                    const dist = moveToX(220);
+                    if (dist < 15) initiateJump('right', 500);
                 }
             } else if (playerLevel === 'top') {
                 cpu.ArrowLeft = true; cpu.ArrowRight = false;
