@@ -525,10 +525,10 @@
             const running = frame === 1 || frame === 2;
             if (running) y -= 2;
 
-            const BROWN = "#5C3010";
-            const TAN   = "#A06830";
-            const HORN  = "#2C1505";
-            const HOOF  = "#1A0A04";
+            const BROWN = "#A0622A";
+            const TAN   = "#D49850";
+            const HORN  = "#7A4520";
+            const HOOF  = "#5A3018";
 
             function arc(c, x, cy, rx, ry) {
                 ctx.fillStyle = c;
@@ -819,12 +819,12 @@
 
         function draw() {
             // Sky
-            ctx.fillStyle = "#87CEEB";
+            ctx.fillStyle = "#1a1a1a";
             ctx.fillRect(0, 0, canvas.width, FLOOR);
             skyTick += 0.012;
             skyDots.forEach(d => {
                 const alpha = 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(skyTick * Math.PI * 2 + d.phase * Math.PI * 2));
-                ctx.fillStyle = d.light ? `rgba(184,228,247,${alpha.toFixed(2)})` : `rgba(107,189,216,${alpha.toFixed(2)})`;
+                ctx.fillStyle = d.light ? `rgba(220,235,255,${alpha.toFixed(2)})` : `rgba(150,180,220,${alpha.toFixed(2)})`;
                 ctx.fillRect(d.x, d.y, 3, 3);
             });
 
