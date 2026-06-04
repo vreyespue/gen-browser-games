@@ -134,8 +134,27 @@
                 text-shadow: 2px 2px 6px rgba(0,0,0,0.9);
             }
             #music-btn { backdrop-filter: none; }
+            #restart-btn { backdrop-filter: none; }
         }
         #music-btn.hidden { opacity: 0; pointer-events: none; transition: opacity 0.4s; }
+
+        #restart-btn {
+            display: inline-block;
+            padding: 12px 36px;
+            font-size: 20px;
+            font-family: 'Georgia', serif;
+            background: rgba(255,255,255,0.1);
+            color: #FFFFFF;
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 40px;
+            cursor: pointer;
+            letter-spacing: 2px;
+            text-decoration: none;
+            backdrop-filter: blur(6px);
+            transition: background 0.2s, transform 0.15s;
+            animation: fadeIn 2s 1.2s both;
+        }
+        #restart-btn:hover { background: rgba(255,255,255,0.25); transform: scale(1.06); }
 
         @keyframes fadeIn {
             from { opacity: 0; }
@@ -154,6 +173,7 @@
     <div class="line1">Thank you for playing!</div>
     <div class="line2">Mach et joot!</div>
     <button id="music-btn" onclick="launchMusic()">♪ Play Music</button>
+    <a id="restart-btn" href="https://vreyespue.github.io/gen-browser-games/bo-platformer-01.html">↩ Restart Game</a>
 </div>
 
 <script>
