@@ -185,9 +185,15 @@ const pieces = Array.from({length: 180}, () => ({
 let ac, started = false;
 
 async function launchMusic() {
-    if (started) return;
+    const btn = document.getElementById('music-btn');
+    if (started) {
+        started = false;
+        if (ac) { ac.close(); ac = null; }
+        btn.textContent = '♪ Play Music';
+        return;
+    }
     started = true;
-    document.getElementById('music-btn').classList.add('hidden');
+    btn.textContent = '■ Stop Music';
 
     ac = new (window.AudioContext || window.webkitAudioContext)();
     if (ac.state === 'suspended') await ac.resume();
@@ -320,8 +326,6 @@ function loopMain() {
     setTimeout(loopMain, totalSec * 1000 - 200);
 }
 
-// Music requires a user gesture — button or any click starts it
-document.addEventListener('click', () => { if (!started) launchMusic(); }, {once: true});
 </script>
 </body>
 </html>
