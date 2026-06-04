@@ -120,6 +120,20 @@
         }
 
         #music-btn:hover { background: rgba(255,215,0,0.35); transform: scale(1.06); }
+
+        /* ── Mobile: strip expensive GPU effects ─────────────────────────────── */
+        @media (hover: none) and (pointer: coarse) {
+            #bg { filter: brightness(0.75); }
+            .trophy { filter: none; }
+            .line1 {
+                text-shadow: 2px 2px 6px rgba(0,0,0,0.9);
+                animation: slideDown 1s cubic-bezier(.22,.68,0,1.2) both;
+            }
+            .line2 {
+                text-shadow: 2px 2px 6px rgba(0,0,0,0.9);
+            }
+            #music-btn { backdrop-filter: none; }
+        }
         #music-btn.hidden { opacity: 0; pointer-events: none; transition: opacity 0.4s; }
 
         @keyframes fadeIn {
@@ -152,7 +166,10 @@ window.addEventListener('resize', resize);
 
 const COLORS = ['#FFD700','#FF6B6B','#4FC3F7','#81C784','#CE93D8','#FFB74D','#F06292','#80DEEA'];
 
-const pieces = Array.from({length: 180}, () => ({
+const isMobile = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+const PARTICLE_COUNT = isMobile ? 55 : 180;
+
+const pieces = Array.from({length: PARTICLE_COUNT}, () => ({
     x: Math.random() * innerWidth,
     y: Math.random() * innerHeight - innerHeight,
     w: Math.random() * 11 + 5,
