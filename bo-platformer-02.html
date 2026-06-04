@@ -102,9 +102,9 @@
         let punkyScore = 0;
 
         const platforms = [
-            { x: 50,  y: 350, width: 200, height: 10 },
-            { x: 300, y: 280, width: 200, height: 10 },
-            { x: 150, y: 200, width: 150, height: 10 }
+            { x: 350, y: 350, width: 200, height: 10 },
+            { x: 100, y: 280, width: 200, height: 10 },
+            { x: 300, y: 200, width: 150, height: 10 }
         ];
 
         const FRUIT_SIZE = 32;
@@ -298,6 +298,7 @@
         function spawnFruit() {
             const name = fruitNames[Math.floor(Math.random() * fruitNames.length)];
             fruit.name = name; fruit.img = fruitImages[name];
+            punky.speed = (name === 'pineapple' || name === 'strawberry') ? 3 : 7;
 
             function candidate() {
                 const platform = platforms[Math.floor(Math.random() * platforms.length)];
@@ -410,26 +411,26 @@
             if (playerLevel === fruitLevel ||
                 (playerLevel === 'ground' && fruitLevel === 'bottom')) {
                 if (playerLevel === 'ground') {
-                    const dist = moveToX(150);
+                    const dist = moveToX(450);
                     if (dist < 20 && onGround) initiateJump(null, 0);
                 } else {
                     moveToX(fruitCx);
                 }
             } else if (fruitLevel === 'middle' || fruitLevel === 'top') {
                 if (playerLevel === 'ground') {
-                    const dist = moveToX(150);
+                    const dist = moveToX(450);
                     if (dist < 20 && onGround) initiateJump(null, 0);
                 } else if (playerLevel === 'bottom') {
-                    const dist = moveToX(205);
-                    if (dist < 15) initiateJump('right', 500);
+                    const dist = moveToX(400);
+                    if (dist < 15) initiateJump('left', 500);
                 } else if (playerLevel === 'middle' && fruitLevel === 'top') {
-                    const dist = moveToX(315);
-                    if (dist < 15) initiateJump('left', 320);
+                    const dist = moveToX(250);
+                    if (dist < 15) initiateJump('right', 320);
                 }
             } else if (playerLevel === 'top') {
-                cpu.ArrowRight = true; cpu.ArrowLeft = false;
-            } else if (playerLevel === 'middle' && fruitLevel === 'bottom') {
                 cpu.ArrowLeft = true; cpu.ArrowRight = false;
+            } else if (playerLevel === 'middle' && fruitLevel === 'bottom') {
+                cpu.ArrowRight = true; cpu.ArrowLeft = false;
             } else {
                 moveToX(fruitCx);
             }
