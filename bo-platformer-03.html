@@ -523,80 +523,90 @@
         // ── Draw Hennes ────────────────────────────────────────────────────────
         function drawHennesChar(ox, y, frame) {
             const running = frame === 1 || frame === 2;
-            if (running) y -= 3;
+            if (running) y -= 2;
 
-            const rightLeads = (frame === 1);
-            const leftLegX  = ox + 4,  rightLegX = ox + 16;
-            const leftArmX  = ox - 1,  rightArmX = ox + 25;
+            const BROWN = "#5C3010";
+            const TAN   = "#A06830";
+            const HORN  = "#2C1505";
+            const HOOF  = "#1A0A04";
 
-            if (running) {
-                const backLegX = rightLeads ? leftLegX  : rightLegX;
-                const backArmX = rightLeads ? leftArmX  : rightArmX;
-                ctx.fillStyle = "#1A3FCC";
-                ctx.fillRect(backLegX, y + 31, 10, 6);
-                ctx.fillStyle = "#3B1F0A";
-                ctx.fillRect(backLegX - 1, y + 37, 11, 3);
-                ctx.fillStyle = "#FDBCB4";
-                ctx.fillRect(backArmX, y + 25, 4, 10);
+            function arc(c, x, cy, rx, ry) {
+                ctx.fillStyle = c;
+                ctx.beginPath();
+                ctx.ellipse(x, cy, rx, ry !== undefined ? ry : rx, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            function rect(c, x, ry, w, h) { ctx.fillStyle = c; ctx.fillRect(x, ry, w, h); }
+            function tri(c, x1, y1, x2, y2, x3, y3) {
+                ctx.fillStyle = c;
+                ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.lineTo(x3,y3); ctx.fill();
             }
 
-            ctx.fillStyle = "#FFFFFF";
-            ctx.fillRect(ox + 6, y, 20, 7);
-            ctx.fillRect(ox + 1, y + 6, 28, 4);
-            ctx.fillStyle = "#7B3F00";
-            ctx.fillRect(ox + 2, y + 10, 5, 3);
-            ctx.fillStyle = "#FDBCB4";
-            ctx.fillRect(ox + 5, y + 9, 20, 13);
-            ctx.fillStyle = "#000000";
-            ctx.fillRect(ox + 15, y + 11, 3, 3);
-            ctx.fillRect(ox + 20, y + 11, 3, 3);
-            ctx.fillStyle = "#e8967a";
-            ctx.fillRect(ox + 20, y + 15, 5, 3);
-            ctx.fillStyle = "#7B3F00";
-            ctx.fillRect(ox + 11, y + 18, 14, 3);
-            ctx.fillStyle = "#FFFFFF";
-            ctx.fillRect(ox + 4, y + 21, 22, 8);
-            ctx.fillStyle = "#1A3FCC";
-            ctx.fillRect(ox + 10, y + 21, 10, 7);
+            function drawHead() {
+                // Large swept-back horns
+                tri(HORN, ox+4,  y+12, ox-6, y-10, ox+12, y+5);
+                tri(HORN, ox+16, y+12, ox+9, y-8,  ox+24, y+5);
+                // Flat ear pressed to head
+                rect(BROWN, ox,     y+12, 5, 7);
+                rect(TAN,   ox+1,   y+13, 3, 5);
+                // Head - blockier
+                arc(BROWN, ox + 13, y + 15, 12, 11);
+                // Wide strong muzzle
+                arc(TAN, ox + 22, y + 19, 7, 6);
+                // Wide flared nostrils
+                rect("#000", ox + 21, y + 15, 4, 2);
+                rect("#000", ox + 26, y + 15, 2, 2);
+                // Heavy angry brow (inner end lower = scowl)
+                ctx.fillStyle = HORN;
+                ctx.beginPath();
+                ctx.moveTo(ox+12, y+8);
+                ctx.lineTo(ox+25, y+5);
+                ctx.lineTo(ox+25, y+8);
+                ctx.lineTo(ox+12, y+12);
+                ctx.fill();
+                // Eye - narrow under heavy brow
+                arc("#fff", ox + 18, y + 13, 4, 3);
+                arc("#111", ox + 19, y + 13, 2.5);
+            }
+
+            function drawBody() {
+                arc(BROWN, ox + 15, y + 30, 11, 9);
+                arc(TAN,   ox + 17, y + 33,  4, 4);
+            }
 
             if (frame === 0) {
-                ctx.fillStyle = "#FDBCB4";
-                ctx.fillRect(leftArmX,  y + 22, 4, 7);
-                ctx.fillRect(rightArmX, y + 22, 4, 7);
-                ctx.fillStyle = "#1A3FCC";
-                ctx.fillRect(leftLegX,  y + 28, 10, 12);
-                ctx.fillRect(rightLegX, y + 28, 10, 12);
-                ctx.fillStyle = "#3B1F0A";
-                ctx.fillRect(leftLegX  - 2, y + 36, 13, 4);
-                ctx.fillRect(rightLegX - 1, y + 36, 13, 4);
-            }
+                rect(BROWN, ox - 2,  y + 22, 6, 9);
+                rect(BROWN, ox + 26, y + 22, 6, 9);
+                drawBody();
+                rect(BROWN, ox + 7,  y + 35, 6, 8);
+                rect(BROWN, ox + 17, y + 35, 6, 8);
+                rect(HOOF,  ox + 6,  y + 42, 8, 3);
+                rect(HOOF,  ox + 16, y + 42, 8, 3);
+                drawHead();
+            } else if (running) {
+                const rightLeads = frame === 1;
+                const bArmX = rightLeads ? ox - 2 : ox + 26;
+                const fArmX = rightLeads ? ox + 26 : ox - 2;
+                const bLegX = rightLeads ? ox + 7  : ox + 17;
+                const fLegX = rightLeads ? ox + 17 : ox + 7;
 
-            if (frame === 3) {
-                ctx.fillStyle = "#FDBCB4";
-                ctx.fillRect(leftArmX, y + 25, 4, 9);
-                ctx.fillStyle = "#1A3FCC";
-                ctx.fillRect(leftLegX, y + 32, 10, 5);
-                ctx.fillStyle = "#3B1F0A";
-                ctx.fillRect(leftLegX - 1, y + 37, 11, 3);
-                ctx.fillStyle = "#FDBCB4";
-                ctx.fillRect(rightArmX, y + 10, 4, 13);
-                ctx.fillStyle = "#1A3FCC";
-                ctx.fillRect(rightLegX,     y + 20, 10, 6);
-                ctx.fillRect(rightLegX + 2, y + 26, 8,  5);
-                ctx.fillStyle = "#3B1F0A";
-                ctx.fillRect(rightLegX, y + 30, 11, 3);
-            }
-
-            if (running) {
-                const frontLegX = rightLeads ? rightLegX : leftLegX;
-                const frontArmX = rightLeads ? rightArmX : leftArmX;
-                ctx.fillStyle = "#1A3FCC";
-                ctx.fillRect(frontLegX,     y + 18, 10, 7);
-                ctx.fillRect(frontLegX + 3, y + 25, 8,  7);
-                ctx.fillStyle = "#3B1F0A";
-                ctx.fillRect(frontLegX + 1, y + 31, 12, 4);
-                ctx.fillStyle = "#FDBCB4";
-                ctx.fillRect(frontArmX, y + 12, 4, 11);
+                rect(BROWN, bArmX,     y + 27, 6, 7);
+                rect(BROWN, bLegX,     y + 35, 6, 7);
+                rect(HOOF,  bLegX - 1, y + 40, 8, 3);
+                drawBody();
+                rect(BROWN, fArmX,     y + 19, 6, 7);
+                rect(BROWN, fLegX,     y + 31, 6, 9);
+                rect(HOOF,  fLegX - 1, y + 38, 8, 3);
+                drawHead();
+            } else if (frame === 3) {
+                rect(BROWN, ox - 4,  y + 13, 6, 7);
+                rect(BROWN, ox + 28, y + 13, 6, 7);
+                drawBody();
+                rect(BROWN, ox + 7,  y + 34, 6, 7);
+                rect(HOOF,  ox + 6,  y + 40, 8, 3);
+                rect(BROWN, ox + 17, y + 30, 6, 7);
+                rect(HOOF,  ox + 16, y + 36, 8, 3);
+                drawHead();
             }
         }
 
