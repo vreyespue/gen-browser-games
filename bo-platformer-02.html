@@ -80,17 +80,14 @@
 
         const skyGoat = { x: 680, y: 60, speed: 0.22 };
 
-        // Pre-generate sparse pixel dots for sky texture
-        const skyDots = [];
-        for (let gx = 8; gx < 600; gx += 16) {
-            for (let gy = 8; gy < 400; gy += 16) {
-                const h = (gx * 7 + gy * 13) % 31;
-                if (h < 7) skyDots.push({
-                    x: gx + (h % 4) * 2, y: gy + Math.floor(h / 4) * 2,
-                    light: h < 3, phase: (gx * 3 + gy * 5) % 100 / 100
-                });
-            }
-        }
+        // Rain drops
+        const rainDrops = Array.from({ length: 100 }, (_, i) => ({
+            x:      Math.random() * 600,
+            y:      Math.random() * 400,
+            speed:  2.5 + Math.random() * 3,
+            len:    5  + Math.floor(Math.random() * 6),
+            alpha:  0.18 + Math.random() * 0.28
+        }));
         let skyTick = 0;
 
         // Punky = CPU competitor
@@ -850,10 +847,15 @@
             ctx.fillStyle = "#5a9dbf";
             ctx.fillRect(0, 0, canvas.width, FLOOR);
             skyTick += 0.012;
-            skyDots.forEach(d => {
-                const alpha = 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(skyTick * Math.PI * 2 + d.phase * Math.PI * 2));
-                ctx.fillStyle = d.light ? `rgba(184,228,247,${alpha.toFixed(2)})` : `rgba(107,189,216,${alpha.toFixed(2)})`;
-                ctx.fillRect(d.x, d.y, 3, 3);
+            rainDrops.forEach(d => {
+                d.y += d.speed;
+                if (d.y > FLOOR) { d.y = -d.len; d.x = Math.random() * canvas.width; }
+                ctx.strokeStyle = `rgba(180,220,255,${d.alpha.toFixed(2)})`;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(d.x, d.y);
+                ctx.lineTo(d.x - 1, d.y + d.len);
+                ctx.stroke();
             });
 
             clouds.forEach(c => {
