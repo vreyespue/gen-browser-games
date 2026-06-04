@@ -743,7 +743,7 @@
             ctx.fill();
         }
 
-        function drawGeissbock(x, y) {
+        function drawSkyGeissbock(x, y) {
             const s = 1.35;
             ctx.save();
             ctx.translate(x, y);
@@ -836,7 +836,7 @@
 
             skyGoat.x += skyGoat.speed;
             if (skyGoat.x > canvas.width + 60) skyGoat.x = -60;
-            drawGeissbock(skyGoat.x, skyGoat.y);
+            drawSkyGeissbock(skyGoat.x, skyGoat.y);
 
             drawGeissbock();
             drawRewe();
@@ -890,7 +890,7 @@
                 ctx.fillStyle = "#ffffff";
                 ctx.textAlign = "left";
                 ctx.font = "10px 'Press Start 2P', monospace";
-                ctx.fillText("Geissbock is strong! will do some magic for bananas ...", bx + 18, by + 18);
+                ctx.fillText("Geissbock is strong! will do magic for bananas ...", bx + 18, by + 18);
                 // blinking arrow
                 if (Math.floor(skyTick * 4) % 2 === 0) {
                     ctx.fillText(">", bx + bw - 26, by + bh - 10);
