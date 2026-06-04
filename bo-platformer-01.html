@@ -517,7 +517,7 @@
                 reweScore++;
                 spawnParticles(fruit.x + FRUIT_SIZE / 2, fruit.y + FRUIT_SIZE / 2);
                 playFruitSound("bo");
-                if (reweScore >= WIN_SCORE) { winner = "Bo"; stopMusic(); playWinSound(); return; }
+                if (reweScore >= WIN_SCORE) { winner = "Bo"; winTime = Date.now(); stopMusic(); playWinSound(); return; }
                 spawnFruit();
             }
         }
@@ -897,6 +897,20 @@
                 ctx.fillStyle = "#FFD700";
                 ctx.font = "28px 'Press Start 2P'";
                 ctx.fillText(winner + " wins!", cx, winner === "Handwerker" ? cy - 40 : cy);
+                if (winner === "Bo") {
+                    const elapsed = Date.now() - winTime;
+                    const secsLeft = Math.ceil((5000 - elapsed) / 1000);
+                    if (elapsed >= 5000) {
+                        window.location.href = "https://vreyespue.github.io/gen-browser-games/bo-platformer-02.html";
+                    } else {
+                        ctx.fillStyle = "#ffffff";
+                        ctx.font = "10px 'Press Start 2P'";
+                        ctx.fillText("Redirecting to next level ...", cx, cy + 40);
+                        ctx.fillStyle = "#FFD700";
+                        ctx.font = "20px 'Press Start 2P'";
+                        ctx.fillText(secsLeft, cx, cy + 72);
+                    }
+                }
                 if (winner === "Handwerker") {
                     const elapsed = Date.now() - winTime;
                     if (elapsed >= 5000) {
