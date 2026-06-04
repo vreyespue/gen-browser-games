@@ -531,12 +531,12 @@
             //tri("#0a3090", hcx-4, hcy-1,  hcx-23, hcy-11, hcx-9, hcy+5);
             //tri("#0a3090", hcx-8, hcy-12, hcx-21, hcy-28, hcx+8, hcy);
             //tri("#0a3090", hcx-2, hcy-17, hcx-5, hcy-32, hcx+14, hcy-2);
-            tri("#1a7a28", hcx-0, hcy-2,  hcx-22, hcy-10, hcx-10, hcy+4);
-            tri("#1a7a28", hcx-10, hcy-5, hcx-18, hcy-20, hcx+8, hcy-1);
-            tri("#1a7a28", hcx-1, hcy-2, hcx-10, hcy-25, hcx+13, hcy-3);
+            tri("#111111", hcx-0, hcy-2,  hcx-22, hcy-10, hcx-10, hcy+4);
+            tri("#111111", hcx-10, hcy-5, hcx-18, hcy-20, hcx+8, hcy-1);
+            tri("#111111", hcx-1, hcy-2, hcx-10, hcy-25, hcx+13, hcy-3);
 
             // Head
-            arc("#1a7a28", hcx, hcy, 12);
+            arc("#111111", hcx, hcy, 12);
 
             // Muzzle — front of face (RIGHT side = front when facing right)
             arc("#f0c878", ox + 21, y + 16, 6, 5);
@@ -555,37 +555,37 @@
 
             // Eye — white sclera, dark iris, highlight
             arc("#ffffff", ox + 19, y + 9, 4, 5);
-            arc("#004d00", ox + 20, y + 10, 3);
+            arc("#111111", ox + 20, y + 10, 3);
             arc("#ffffff", ox + 22, y + 8,  1.2);
 
             // Body
-            arc("#1a7a28", ox + 13, y + 27, 8, 7);
+            arc("#111111", ox + 13, y + 27, 8, 7);
             arc("#f0c878",  ox + 17, y + 27, 5);
 
             // Arms & gloves (kept clear of the head area)
             if (frame === 0) {
-                rect("#1a7a28", ox + 1,  y + 23, 5, 7);
-                rect("#1a7a28", ox + 22, y + 23, 5, 7);
+                rect("#111111", ox + 1,  y + 23, 5, 7);
+                rect("#111111", ox + 22, y + 23, 5, 7);
                 arc("#ffffff",  ox + 3,  y + 32, 5);
                 arc("#ffffff",  ox + 25, y + 32, 5);
             } else if (running) {
                 const fwdX = rightLeads ? ox + 22 : ox + 1;
                 const bckX = rightLeads ? ox + 1  : ox + 22;
-                rect("#1a7a28", fwdX, y + 20, 5, 7);
+                rect("#111111", fwdX, y + 20, 5, 7);
                 arc("#ffffff",  fwdX + 2, y + 29, 5);
-                rect("#1a7a28", bckX, y + 26, 5, 6);
+                rect("#111111", bckX, y + 26, 5, 6);
                 arc("#ffffff",  bckX + 2, y + 34, 5);
             } else {
-                rect("#1a7a28", ox - 1, y + 18, 5, 7);
-                rect("#1a7a28", ox + 24, y + 18, 5, 7);
+                rect("#111111", ox - 1, y + 18, 5, 7);
+                rect("#111111", ox + 24, y + 18, 5, 7);
                 arc("#ffffff",  ox + 2,  y + 27, 5);
                 arc("#ffffff",  ox + 27, y + 27, 5);
             }
 
             // Legs & shoes
             if (frame === 0) {
-                rect("#0d4d18", ox + 8,  y + 33, 5, 4);
-                rect("#0d4d18", ox + 17, y + 33, 5, 4);
+                rect("#111111", ox + 8,  y + 33, 5, 4);
+                rect("#111111", ox + 17, y + 33, 5, 4);
                 rect("#cc1100", ox + 5,  y + 35, 9, 5);
                 rect("#cc1100", ox + 15, y + 35, 9, 5);
                 rect("#ffcc00", ox + 8,  y + 37, 3, 2);
@@ -593,15 +593,15 @@
             } else if (running) {
                 const fL = ox + (rightLeads ? 17 : 8);
                 const bL = ox + (rightLeads ?  8 : 17);
-                rect("#0d4d18", fL,     y + 28, 5, 7);
+                rect("#111111", fL,     y + 28, 5, 7);
                 rect("#cc1100", fL - 2, y + 33, 10, 5);
                 rect("#ffcc00", fL,     y + 35, 3, 2);
-                rect("#0d4d18", bL,     y + 33, 5, 4);
+                rect("#111111", bL,     y + 33, 5, 4);
                 rect("#cc1100", bL - 1, y + 36, 8, 4);
                 rect("#ffcc00", bL + 1, y + 37, 3, 2);
             } else {
-                rect("#0d4d18", ox + 7,  y + 32, 5, 5);
-                rect("#0d4d18", ox + 17, y + 32, 5, 5);
+                rect("#111111", ox + 7,  y + 32, 5, 5);
+                rect("#111111", ox + 17, y + 32, 5, 5);
                 rect("#cc1100", ox + 4,  y + 35, 9, 5);
                 rect("#cc1100", ox + 15, y + 35, 9, 5);
                 rect("#ffcc00", ox + 7,  y + 37, 3, 2);
