@@ -746,35 +746,100 @@
         function drawSkyDom(x, y) {
             ctx.save();
             ctx.translate(x, y);
-            const w = "rgba(255,255,255,0.85)";
-            const wd = "rgba(160,190,220,0.55)";
-            const f = (dx, dy, dw, dh) => { ctx.fillStyle = w;  ctx.fillRect(dx, dy, dw, dh); };
-            const g = (dx, dy, dw, dh) => { ctx.fillStyle = wd; ctx.fillRect(dx, dy, dw, dh); };
+            // Cloudy grey-white palette
+            const WH = "rgba(215,228,245,0.92)"; // misty cloud white
+            const SH = "rgba(110,140,185,0.58)"; // shadow / tracery voids
 
-            // Left tower spire
-            ctx.fillStyle = w;
-            ctx.beginPath(); ctx.moveTo(7, 0); ctx.lineTo(0, 14); ctx.lineTo(14, 14); ctx.fill();
-            // Left tower body
-            f(0, 13, 16, 52);
-            // Right tower spire
-            ctx.beginPath(); ctx.moveTo(58, 0); ctx.lineTo(51, 14); ctx.lineTo(65, 14); ctx.fill();
-            // Right tower body
-            f(50, 13, 16, 52);
-            // Nave gable
-            ctx.beginPath(); ctx.moveTo(33, 14); ctx.lineTo(17, 26); ctx.lineTo(49, 26); ctx.fill();
+            // Draw one tower centred at tx
+            function drawTower(tx) {
+                // --- Spire needle and finial (  |  /  ---  /  |  ) ---
+                ctx.fillStyle = WH;
+                ctx.fillRect(tx - 1,  0, 2,  5);  // |  needle tip
+                ctx.fillRect(tx - 5,  5, 10, 2);  // ---  finial bar
+                ctx.fillRect(tx - 1,  7, 2,  5);  // |  neck
+
+                // --- Outer spire triangle ---
+                ctx.fillStyle = WH;
+                ctx.beginPath();
+                ctx.moveTo(tx,       12);
+                ctx.lineTo(tx - 16,  56);
+                ctx.lineTo(tx + 16,  56);
+                ctx.closePath();
+                ctx.fill();
+
+                // --- Level-1 tracery void (large dark inner triangle) ---
+                ctx.fillStyle = SH;
+                ctx.beginPath();
+                ctx.moveTo(tx,       16);
+                ctx.lineTo(tx - 10,  51);
+                ctx.lineTo(tx + 10,  51);
+                ctx.closePath();
+                ctx.fill();
+
+                // --- Level-2 sub-spire inside the void (white) ---
+                ctx.fillStyle = WH;
+                ctx.beginPath();
+                ctx.moveTo(tx,       19);
+                ctx.lineTo(tx -  6,  40);
+                ctx.lineTo(tx +  6,  40);
+                ctx.closePath();
+                ctx.fill();
+
+                // --- Level-3 inner void (darkest, smallest triangle) ---
+                ctx.fillStyle = SH;
+                ctx.beginPath();
+                ctx.moveTo(tx,       23);
+                ctx.lineTo(tx -  3,  35);
+                ctx.lineTo(tx +  3,  35);
+                ctx.closePath();
+                ctx.fill();
+
+                // --- Tower body rectangle ---
+                ctx.fillStyle = WH;
+                ctx.fillRect(tx - 16, 56, 32, 42);
+
+                // --- Buttress dividers (| | | pattern) ---
+                ctx.fillStyle = SH;
+                ctx.fillRect(tx - 11, 56,  2, 42); // left inner slot
+                ctx.fillRect(tx +  9, 56,  2, 42); // right inner slot
+
+                // --- Tower windows ---
+                ctx.fillRect(tx - 14, 62,  9,  8); // left window
+                ctx.fillRect(tx +  5, 62,  9,  8); // right window
+
+                // --- Base portal arch (pointed) ---
+                ctx.beginPath();
+                ctx.moveTo(tx - 5, 98);
+                ctx.lineTo(tx,     89);
+                ctx.lineTo(tx + 5, 98);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // Left tower (centre x=18), right tower (centre x=61)
+            drawTower(18);
+            drawTower(61);
+
+            // --- Nave gable between the towers ---
+            ctx.fillStyle = WH;
+            ctx.beginPath();
+            ctx.moveTo(39.5, 36);
+            ctx.lineTo(28,   56);
+            ctx.lineTo(51,   56);
+            ctx.closePath();
+            ctx.fill();
             // Nave body
-            f(16, 25, 33, 40);
-            // Left tower windows
-            g(2,  20, 12, 9);
-            g(2,  34, 12, 9);
-            // Right tower windows
-            g(52, 20, 12, 9);
-            g(52, 34, 12, 9);
+            ctx.fillRect(28, 56, 23, 42);
             // Nave rose window
-            g(24, 28, 17, 14);
-            // Portal arches
-            g(18, 50, 9, 15);
-            g(38, 50, 9, 15);
+            ctx.fillStyle = SH;
+            ctx.fillRect(31, 63, 16, 10);
+            // Nave portal arch
+            ctx.beginPath();
+            ctx.moveTo(34,   98);
+            ctx.lineTo(39.5, 89);
+            ctx.lineTo(45,   98);
+            ctx.closePath();
+            ctx.fill();
 
             ctx.restore();
         }
