@@ -302,7 +302,13 @@
                 const onFloor = Math.random() < 0.15;
                 let fx, fy;
                 if (onFloor) {
-                    fx = FRUIT_SIZE + Math.random() * (canvas.width - FRUIT_SIZE * 3);
+                    // place only in left quarter (0–150) or right quarter (450–600)
+                    const quarter = canvas.width / 4;
+                    if (Math.random() < 0.5) {
+                        fx = FRUIT_SIZE + Math.random() * (quarter - FRUIT_SIZE * 2);
+                    } else {
+                        fx = canvas.width * 3 / 4 + Math.random() * (quarter - FRUIT_SIZE * 2);
+                    }
                     fy = FLOOR - FRUIT_SIZE;
                 } else {
                     const platform = platforms[Math.floor(Math.random() * platforms.length)];
@@ -322,7 +328,7 @@
                 if (c.dist >= 160) { best = c; break; }
             }
             fruit.x = best.x; fruit.y = best.y;
-            cpuTeleportAt = (name === 'banana' || name === 'pear') ? Date.now() + 1250 : 0;
+            cpuTeleportAt = (name === 'banana' || name === 'pear') ? Date.now() + 1100 : 0;
         }
 
         spawnFruit('apple');
@@ -448,7 +454,8 @@
         function detectFruitLevel(fy) {
             if (fy < 175) return 'top';    // upper platforms (fy≈158)
             if (fy < 260) return 'middle'; // middle center  (fy≈238)
-            return 'bottom';               // lower center   (fy≈318)
+            if (fy < 340) return 'bottom'; // lower center   (fy≈318)
+            return 'ground';               // floor level    (fy≈368)
         }
 
         function updateCPU() {
@@ -500,8 +507,9 @@
 
             } else if (playerLevel === 'bottom') {
                 if (fruitLevel === 'ground') {
-                    // Walk off the platform to fall down
-                    cpu.ArrowLeft = true; cpu.ArrowRight = false;
+                    // Walk off the platform edge toward the fruit side
+                    if (fruitCx > playerCx) { cpu.ArrowRight = true; cpu.ArrowLeft = false; }
+                    else                    { cpu.ArrowLeft  = true; cpu.ArrowRight = false; }
                 } else {
                     // Jump straight up to reach middle-center platform
                     const dist = moveToX(300);
@@ -520,6 +528,10 @@
                         const dist = moveToX(365);
                         if (dist < 20 && onGround) initiateJump('right', 580);
                     }
+                } else if (fruitLevel === 'ground') {
+                    // Fruit is on the floor — walk off toward fruit side
+                    if (fruitCx > playerCx) { cpu.ArrowRight = true; cpu.ArrowLeft = false; }
+                    else                    { cpu.ArrowLeft  = true; cpu.ArrowRight = false; }
                 } else {
                     // Fruit is lower — walk off platform edge to fall down
                     cpu.ArrowLeft = true; cpu.ArrowRight = false;
