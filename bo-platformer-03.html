@@ -78,7 +78,7 @@
             { x: 490, y: 60,  r: 25, speed: 0.15 },
         ];
 
-        const skyGoat = { x: 680, y: 60, speed: 0.22 };
+        const skyDom = { x: 680, y: 30, speed: 0.18 };
 
         // Pre-generate sparse pixel dots for sky texture
         const skyDots = [];
@@ -743,37 +743,39 @@
             ctx.fill();
         }
 
-        function drawSkyGeissbock(x, y) {
-            const s = 1.35;
+        function drawSkyDom(x, y) {
             ctx.save();
             ctx.translate(x, y);
-            ctx.scale(s, s);
             const w = "rgba(255,255,255,0.85)";
-            const f = (dx, dy, dw, dh) => { ctx.fillStyle = w; ctx.fillRect(dx, dy, dw, dh); };
-            // body
-            f(18, 12, 22, 13);
-            // head
-            f( 0,  8, 20, 13);
-            // neck connection
-            f(16, 10,  6,  9);
-            // horns
-            f( 4,  0,  4,  9);
-            f( 2,  3,  4,  4);
-            f(10,  0,  4,  7);
-            f(10,  4,  5,  3);
-            // beard
-            f( 1, 20,  6,  7);
-            // legs
-            f(20, 25,  4, 11);
-            f(26, 25,  4, 11);
-            f(32, 25,  4, 11);
-            // tail
-            f(39,  9,  5,  4);
-            f(41,  7,  4,  4);
-            // "FC Köln" label
-            ctx.font = "bold 7px 'Press Start 2P', monospace";
+            const wd = "rgba(160,190,220,0.55)";
+            const f = (dx, dy, dw, dh) => { ctx.fillStyle = w;  ctx.fillRect(dx, dy, dw, dh); };
+            const g = (dx, dy, dw, dh) => { ctx.fillStyle = wd; ctx.fillRect(dx, dy, dw, dh); };
+
+            // Left tower spire
             ctx.fillStyle = w;
-            ctx.fillText("FC Köln", 0, 50);
+            ctx.beginPath(); ctx.moveTo(7, 0); ctx.lineTo(0, 14); ctx.lineTo(14, 14); ctx.fill();
+            // Left tower body
+            f(0, 13, 16, 52);
+            // Right tower spire
+            ctx.beginPath(); ctx.moveTo(58, 0); ctx.lineTo(51, 14); ctx.lineTo(65, 14); ctx.fill();
+            // Right tower body
+            f(50, 13, 16, 52);
+            // Nave gable
+            ctx.beginPath(); ctx.moveTo(33, 14); ctx.lineTo(17, 26); ctx.lineTo(49, 26); ctx.fill();
+            // Nave body
+            f(16, 25, 33, 40);
+            // Left tower windows
+            g(2,  20, 12, 9);
+            g(2,  34, 12, 9);
+            // Right tower windows
+            g(52, 20, 12, 9);
+            g(52, 34, 12, 9);
+            // Nave rose window
+            g(24, 28, 17, 14);
+            // Portal arches
+            g(18, 50, 9, 15);
+            g(38, 50, 9, 15);
+
             ctx.restore();
         }
 
@@ -834,9 +836,9 @@
                 drawCloud(c.x, c.y, c.r);
             });
 
-            skyGoat.x += skyGoat.speed;
-            if (skyGoat.x > canvas.width + 60) skyGoat.x = -60;
-            drawSkyGeissbock(skyGoat.x, skyGoat.y);
+            skyDom.x += skyDom.speed;
+            if (skyDom.x > canvas.width + 80) skyDom.x = -80;
+            drawSkyDom(skyDom.x, skyDom.y);
 
             drawGeissbock();
             drawRewe();
