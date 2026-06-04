@@ -298,9 +298,17 @@
             fruit.name = name; fruit.img = fruitImages[name];
 
             function candidate() {
-                const platform = platforms[Math.floor(Math.random() * platforms.length)];
-                const fx = platform.x + 4 + Math.random() * (platform.width - FRUIT_SIZE - 8);
-                const fy = platform.y - FRUIT_SIZE;
+                // some chance to place the fruit on the floor
+                const onFloor = Math.random() < 0.15;
+                let fx, fy;
+                if (onFloor) {
+                    fx = FRUIT_SIZE + Math.random() * (canvas.width - FRUIT_SIZE * 3);
+                    fy = FLOOR - FRUIT_SIZE;
+                } else {
+                    const platform = platforms[Math.floor(Math.random() * platforms.length)];
+                    fx = platform.x + 4 + Math.random() * (platform.width - FRUIT_SIZE - 8);
+                    fy = platform.y - FRUIT_SIZE;
+                }
                 const fcx = fx + FRUIT_SIZE / 2, fcy = fy + FRUIT_SIZE / 2;
                 const dr = Math.hypot(fcx - (rewe.x + 15),  fcy - (rewe.y + 20));
                 const dm = Math.hypot(fcx - (geissbock.x + 15), fcy - (geissbock.y + 20));
