@@ -354,16 +354,18 @@
         let cpuJumpDir   = null;
         let cpuLastLevel = 'bottom';
 
+        // Platforms: lower-center y=350 (char y=310), middle-center y=270 (char y=230),
+        //            upper-left y=190 (char y=150), upper-right y=190 (char y=150)
         function detectLevel(py) {
-            if (py <= 170) return 'top';
-            if (py <= 255) return 'middle';
-            if (py <= 330) return 'bottom';
+            if (py <= 165) return 'top';
+            if (py <= 245) return 'middle';
+            if (py <= 325) return 'bottom';
             return 'ground';
         }
         function detectFruitLevel(fy) {
-            if (fy < 190) return 'top';
-            if (fy < 268) return 'middle';
-            return 'bottom';
+            if (fy < 175) return 'top';    // upper platforms (fy≈158)
+            if (fy < 260) return 'middle'; // middle center  (fy≈238)
+            return 'bottom';               // lower center   (fy≈318)
         }
 
         function updateCPU() {
@@ -404,31 +406,49 @@
                 return Math.abs(d);
             }
 
-            if (playerLevel === fruitLevel ||
-                (playerLevel === 'ground' && fruitLevel === 'bottom')) {
-                if (playerLevel === 'ground') {
-                    const dist = moveToX(150);
-                    if (dist < 20 && onGround) initiateJump(null, 0);
-                } else {
-                    moveToX(fruitCx);
-                }
-            } else if (fruitLevel === 'middle' || fruitLevel === 'top') {
-                if (playerLevel === 'ground') {
-                    const dist = moveToX(150);
-                    if (dist < 20 && onGround) initiateJump(null, 0);
-                } else if (playerLevel === 'bottom') {
-                    const dist = moveToX(205);
-                    if (dist < 15) initiateJump('right', 500);
-                } else if (playerLevel === 'middle' && fruitLevel === 'top') {
-                    const dist = moveToX(315);
-                    if (dist < 15) initiateJump('left', 320);
-                }
-            } else if (playerLevel === 'top') {
-                cpu.ArrowRight = true; cpu.ArrowLeft = false;
-            } else if (playerLevel === 'middle' && fruitLevel === 'bottom') {
-                cpu.ArrowLeft = true; cpu.ArrowRight = false;
-            } else {
+            if (playerLevel === fruitLevel) {
+                // Same level — walk directly to the fruit
                 moveToX(fruitCx);
+
+            } else if (playerLevel === 'ground') {
+                // Step 1: jump onto lower-center platform (x=220–380, center=300)
+                const dist = moveToX(300);
+                if (dist < 30 && onGround) initiateJump(null, 0);
+
+            } else if (playerLevel === 'bottom') {
+                if (fruitLevel === 'ground') {
+                    // Walk off the platform to fall down
+                    cpu.ArrowLeft = true; cpu.ArrowRight = false;
+                } else {
+                    // Jump straight up to reach middle-center platform
+                    const dist = moveToX(300);
+                    if (dist < 60 && onGround) initiateJump(null, 0);
+                }
+
+            } else if (playerLevel === 'middle') {
+                if (fruitLevel === 'top') {
+                    // Jump diagonally to upper-left (x≈95) or upper-right (x≈505)
+                    // From x≈235 moving left 29 frames → lands at x≈90 (upper-left ✓)
+                    // From x≈365 moving right 29 frames → lands at x≈510 (upper-right ✓)
+                    if (fruitCx <= 300) {
+                        const dist = moveToX(235);
+                        if (dist < 20 && onGround) initiateJump('left', 580);
+                    } else {
+                        const dist = moveToX(365);
+                        if (dist < 20 && onGround) initiateJump('right', 580);
+                    }
+                } else {
+                    // Fruit is lower — walk off platform edge to fall down
+                    cpu.ArrowLeft = true; cpu.ArrowRight = false;
+                }
+
+            } else if (playerLevel === 'top') {
+                // Walk toward canvas centre so we fall off and descend
+                if (playerCx < 300) {
+                    cpu.ArrowRight = true; cpu.ArrowLeft = false;
+                } else {
+                    cpu.ArrowLeft = true; cpu.ArrowRight = false;
+                }
             }
         }
 
