@@ -139,54 +139,46 @@
             musicMaster.gain.setValueAtTime(1, audioCtx.currentTime);
             musicMaster.connect(audioCtx.destination);
 
-            const BPM  = 158;
+            const BPM  = 162;
             const BEAT = 60 / BPM;
 
-            // "Cave Crawler" — A minor, bouncy hook with rests, low drip section
+            // "Cave Crawler" — A minor, driving 8th-note hook with syncopated rests
             const intro = [
-                // hook: A4 . C5 D5 (the cave motif — short rest gives bounce)
-                [440, 0.5], [0, 0.5], [523, 0.5], [587, 0.5],
-                // E5~~~ .
-                [659, 1.5], [0, 0.5],
-                // chromatic pickup: F#4 G4 A4 .
-                [370, 0.5], [392, 0.5], [440, 0.5], [0, 0.5],
-                // A4~~~
-                [440, 2],
+                // hook: A4 C5 E5 . C5 A4 . E4  (the cave motif)
+                [440, 0.5], [523, 0.5], [659, 0.5], [0, 0.5],
+                [523, 0.5], [440, 0.5], [0, 0.5], [330, 0.5],
+                // A4 B4 C5 . A4~~
+                [440, 0.5], [494, 0.5], [523, 0.5], [0, 0.5],
+                [440, 1], [0, 1],
             ];
             const phraseA = [
                 // hook
-                [440, 0.5], [0, 0.5], [523, 0.5], [587, 0.5],
-                // E5~~~ D5 .
-                [659, 1], [587, 0.5], [0, 0.5],
-                // response: C5 B4 C5 A4
-                [523, 0.5], [494, 0.5], [523, 0.5], [440, 0.5],
-                // A4~~~ .
-                [440, 2], [0, 0.5],
-                // hook climbs an octave: E5 . G5 A5
-                [659, 0.5], [0, 0.5], [784, 0.5], [880, 0.5],
-                // B5~~~ A5 .
-                [988, 1], [880, 0.5], [0, 0.5],
-                // chromatic fall: G5 F#5 F5 E5 Eb5 D5 C5 B4
-                [784, 0.5], [740, 0.5], [698, 0.5], [659, 0.5],
-                [622, 0.5], [587, 0.5], [523, 0.5], [494, 0.5],
-                // Bb4 A4~~~
-                [466, 0.5], [440, 1.5],
+                [440, 0.5], [523, 0.5], [659, 0.5], [0, 0.5],
+                [523, 0.5], [440, 0.5], [0, 0.5], [330, 0.5],
+                // sequence up: F#4 A4 C5 D5
+                [370, 0.5], [440, 0.5], [523, 0.5], [587, 0.5],
+                // E5~~ . E5
+                [659, 1], [0, 0.5], [659, 0.5],
+                // hook variation one octave up: E5 G5 A5 . G5 E5 . C5
+                [659, 0.5], [784, 0.5], [880, 0.5], [0, 0.5],
+                [784, 0.5], [659, 0.5], [0, 0.5], [523, 0.5],
+                // stepwise drive home: D5 C5 B4 A4
+                [587, 0.5], [523, 0.5], [494, 0.5], [440, 0.5],
+                [440, 1.5], [0, 0.5],
             ];
             const bridge = [
-                // low cave drip: A3 .. A3 C4 . D4 . B3 A3~~~
-                [220, 0.5], [0, 1], [220, 0.5],
-                [262, 0.5], [0, 0.5], [294, 0.5], [0, 0.5],
-                [247, 0.5], [220, 1.5],
-                // rapid hook fragments stacked (builds energy)
-                [440, 0.5], [523, 0.5], [440, 0.5], [0, 0.5],
-                [494, 0.5], [587, 0.5], [494, 0.5], [0, 0.5],
-                [523, 0.5], [659, 0.5], [784, 0.5], [880, 0.5],
-                // A5~~~ .
-                [880, 1.5], [0, 0.5],
-                // final cascade: A5 Ab5 G5 F#5 F5 E5 Eb5 D5 C5 B4 A4~~~
-                [880, 0.5], [831, 0.5], [784, 0.5], [740, 0.5],
-                [698, 0.5], [659, 0.5], [622, 0.5], [587, 0.5],
-                [523, 0.5], [494, 0.5], [440, 2],
+                // low cave heartbeat: A3 . A3 B3 C4 . B3 . A3 . A3 D4 A3~~
+                [220, 0.5], [0, 0.5], [220, 0.5], [247, 0.5],
+                [262, 0.5], [0, 0.5], [247, 0.5], [0, 0.5],
+                [220, 0.5], [0, 0.5], [220, 0.5], [294, 0.5],
+                [220, 1], [0, 1],
+                // ascending drive: A4 B4 C5 D5 E5 . G5 . A5 . G5 E5
+                [440, 0.5], [494, 0.5], [523, 0.5], [587, 0.5],
+                [659, 0.5], [0, 0.5], [784, 0.5], [0, 0.5],
+                [880, 0.5], [0, 0.5], [784, 0.5], [659, 0.5],
+                // chromatic rush: Eb5 D5 Db5 C5 B4 Bb4 A4~~
+                [622, 0.5], [587, 0.5], [554, 0.5], [523, 0.5],
+                [494, 0.5], [466, 0.5], [440, 1],
             ];
             const melody = [
                 ...intro,
@@ -204,9 +196,9 @@
                         osc.connect(gain); gain.connect(musicMaster);
                         osc.type = "triangle";
                         osc.frequency.setValueAtTime(freq, t);
-                        gain.gain.setValueAtTime(0.07, t);
-                        gain.gain.setValueAtTime(0.07, t + dur * 0.82);
-                        gain.gain.linearRampToValueAtTime(0, t + dur * 0.95);
+                        gain.gain.setValueAtTime(0.20, t);
+                        gain.gain.setValueAtTime(0.20, t + dur * 0.75);
+                        gain.gain.linearRampToValueAtTime(0, t + dur * 0.90);
                         osc.start(t); osc.stop(t + dur * 0.95);
                         osc.onended = () => { osc.disconnect(); gain.disconnect(); };
                     }
