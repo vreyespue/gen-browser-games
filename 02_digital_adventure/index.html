@@ -16,7 +16,7 @@
     background:rgba(5,5,15,.88);text-align:center;padding:16px;box-sizing:border-box}
   #title{display:flex;cursor:pointer}
   .overlay h1{color:#ffd23f;font-size:clamp(18px,4.5vw,40px);margin:0 0 8px;text-shadow:3px 3px 0 #b23a00}
-  .overlay p{font-size:clamp(11px,2vw,16px);max-width:80%;margin:6px 0}
+  .overlay p{text-wrap:balance;font-size:clamp(11px,2vw,16px);max-width:80%;margin:6px 0}
   .blink{animation:b 1s steps(2) infinite;color:#5ff}
   @keyframes b{50%{opacity:0}}
   button{font:inherit;color:#ddd;background:#2a2340;border:2px solid #5b4b8a;padding:6px 8px;cursor:pointer;border-radius:3px}
@@ -42,7 +42,7 @@
     <button id="sound" title="Toggle sound">🔊</button>
     <div id="title" class="overlay">
       <h1>THE CURSE OF<br>THE COFFEE MACHINE</h1>
-      <p>A tiny point-and-click adventure about one developer, one cup and zero oat milk.</p>
+      <p>A tiny point-and-click adventure about one developer, one cup and zero oat&nbsp;milk.</p>
       <p>Pick a verb, then click something. Right-click = look at.</p>
       <p class="blink">&gt; click to start &lt;</p>
     </div>
@@ -71,7 +71,8 @@
 
 <script>
 const $ = id => document.getElementById(id);
-const cv = $('cv'), ctx = cv.getContext('2d');
+const cv = $('cv');
+let ctx = cv.getContext('2d');
 ctx.imageSmoothingEnabled = false;
 const rnd = a => a[Math.floor(Math.random() * a.length)];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -213,11 +214,11 @@ def({ id: 'machine', name: 'coffee machine', rect: [291, 146, 93, 114], stand: [
   },
 });
 
-def({ id: 'plant', name: 'plant', rect: [160, 200, 36, 60], stand: [178, 316], cx: 178,
-  look: async () => L("A ficus. It has survived three reorganisations and Herbert's coffee. Respect."),
-  talk: async () => L("Hello, plant. ...You're the best listener in this office."),
-  pick: async () => L("It has roots. Emotional ones too."),
-  use: async item => item ? L("Wasting good stuff on a ficus? Gerda would know. She always knows.") : DEF.use(OBJ_BY.plant),
+def({ id: 'tree', name: 'Christmas tree', rect: [160, 162, 42, 100], stand: [186, 316], cx: 186,
+  look: async () => L("A Christmas tree. Plastic since 2011, officially for 'sustainability'. It has survived three reorganisations."),
+  talk: async () => L("Hello, tree. ...You're the best listener in this office. Merry Christmas."),
+  pick: async () => L("It's decorated. I'm not undoing Herbert's two-hour tinsel project."),
+  use: async item => item ? L("Hang that on the tree? Gerda would know. She always knows.") : DEF.use(OBJ_BY.tree),
 });
 
 def({ id: 'window', name: 'window', rect: [34, 50, 112, 96], stand: [90, 316], cx: 90,
@@ -252,6 +253,11 @@ def({ id: 'herbert', name: 'Herbert', rect: [20, 195, 140, 105], stand: [100, 31
   give: async item => item === 'milk'
     ? (await H("Oat milk? In my day milk came from a cow and we were GRATEFUL."))
     : (await H("An empty cup? Thanks. Is it a metaphor for my career?")),
+});
+
+def({ id: 'milkcarton', name: 'oat milk', rect: [580, 226, 20, 26], stand: [585, 318], cx: 585, visible: () => !S.milk,
+  look: async () => L("Oat milk, barista edition, on Gerda's desk. 'GERDA - HANDS OFF' in permanent marker."),
+  pick: async () => { await L("I reach for it. Gerda's eyes follow my hand like a code reviewer."); await G("Riddle first. Then milk."); },
 });
 
 def({ id: 'gerda', name: 'Gerda', rect: [480, 195, 145, 105], stand: [550, 318], cx: 550,
@@ -463,7 +469,11 @@ function refreshUI() {
   const iv = $('inv'); iv.innerHTML = '<span class="lbl">Inventory:</span>';
   inv.forEach(id => {
     const it = ITEMS[id], b = document.createElement('button');
-    b.textContent = it.icon + ' ' + it.name;
+    if (id === 'milk') {
+      const img = document.createElement('img'); img.src = cartonIcon;
+      img.style.cssText = 'height:22px;image-rendering:pixelated;vertical-align:middle;margin-right:6px';
+      b.append(img, it.name);
+    } else b.textContent = it.icon + ' ' + it.name;
     if (sel.item === id) b.className = 'on';
     b.onmouseenter = () => { hover = it; sentence(); };
     b.onmouseleave = () => { hover = null; sentence(); };
@@ -631,11 +641,20 @@ function drawMachine(t) {
   }
 }
 
-function drawPlant() {
-  R(168, 238, 20, 22, '#b5651d'); R(166, 236, 24, 4, '#c97a30');
-  ctx.fillStyle = '#2e8b3d';
-  for (const [x, y, rx, ry] of [[178, 212, 6, 18], [168, 222, 10, 6], [188, 222, 10, 6], [178, 205, 5, 8]]) { ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, 7); ctx.fill(); }
-  R(177, 220, 2, 18, '#1d5a27');
+function drawTree(t) {
+  ctx.save(); ctx.translate(8, 0);
+  R(176, 232, 5, 12, '#5a3a1a'); R(168, 246, 20, 14, '#a85a1a'); R(166, 243, 24, 4, '#c97a30'); R(168, 257, 20, 3, '#7a3f10');
+  for (const [hw, by, h] of [[17, 236, 22], [14, 220, 20], [11, 205, 18], [8, 191, 16]]) {
+    ctx.fillStyle = '#1f7a35'; ctx.beginPath(); ctx.moveTo(178 - hw, by); ctx.lineTo(178 + hw, by); ctx.lineTo(178, by - h); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,.16)'; ctx.beginPath(); ctx.moveTo(178, by); ctx.lineTo(178 + hw, by); ctx.lineTo(178, by - h); ctx.fill();
+  }
+  for (const [x, y, c] of [[168, 232, '#e74c3c'], [184, 226, '#3498db'], [173, 216, '#f1c40f'], [182, 208, '#e74c3c'], [176, 198, '#9b59b6'], [179, 188, '#3498db'], [187, 232, '#f1c40f']]) { R(x, y, 4, 4, c); R(x, y, 1, 1, '#fff'); }
+  const cols = ['#ff4d4d', '#ffd23f', '#4dff88', '#4da6ff'];
+  [[165, 237], [190, 237], [170, 223], [186, 218], [174, 206], [182, 198], [178, 190], [178, 232]].forEach(([x, y], i) => {
+    if (Math.floor(t / 350 + i * 1.3) % 3) { R(x, y, 2, 2, cols[i % 4]); ctx.globalAlpha = .25; R(x - 2, y - 2, 6, 6, cols[i % 4]); ctx.globalAlpha = 1; }
+  });
+  R(177, 165, 3, 10, '#ffd23f'); R(173, 169, 11, 3, '#ffd23f'); R(175, 167, 7, 7, '#ffe98a');
+  ctx.restore();
 }
 
 function drawDesk(x, w, monX, lines, mc) {
@@ -645,12 +664,24 @@ function drawDesk(x, w, monX, lines, mc) {
   lines.forEach((l, i) => R(monX + 5 + l[0], 220 + i * 4, l[1], 2, mc));
 }
 
+function drawCarton(x, y) {
+  R(x, y, 11, 18, '#f5f0e1'); R(x + 1, y - 3, 9, 3, '#d8cfae'); R(x, y, 2, 18, 'rgba(0,0,0,.12)');
+  R(x + 2, y + 5, 7, 7, '#e0a458'); R(x + 4, y + 7, 3, 3, '#fff'); R(x, y + 16, 11, 2, 'rgba(0,0,0,.2)');
+}
+// the inventory icon is the same carton, rendered once to an image
+const cartonIcon = (() => {
+  const c = document.createElement('canvas'); c.width = 13; c.height = 22;
+  const main = ctx; ctx = c.getContext('2d'); drawCarton(1, 4); ctx = main;
+  return c.toDataURL();
+})();
+
 function drawScene(t) {
-  drawRoom(t); drawCupboard(); drawMachine(t); drawPlant();
+  drawRoom(t); drawCupboard(); drawMachine(t); drawTree(t);
   for (const k of ['herbert', 'gerda']) { const p = P[k], dx = P.hero.x - p.x; p.dir = Math.abs(dx) < 40 ? 0 : Math.sign(dx); person(p, t); }
   drawDesk(20, 140, 118, [[0, 18], [4, 12], [4, 20], [0, 8], [8, 14], [0, 16]], '#3f3');
   drawMug(30, 240, false); R(31, 241, 10, 2, '#6b3e1a');
   drawDesk(480, 145, 482, [[0, 14], [3, 20], [3, 10], [0, 18], [6, 12], [0, 14]], '#f5a');
+  if (!S.milk) drawCarton(585, 232);
   person(P.hero, t);
 }
 
