@@ -242,6 +242,14 @@ def({ id: 'door', name: 'door', rect: [400, 88, 55, 172], stand: [428, 316], cx:
   use: async () => L("Leave without coffee? Even the door knows that's a terrible idea."),
 });
 
+def({ id: 'herbertcup', name: "Herbert's cup", rect: [26, 236, 24, 16], stand: [60, 318], cx: 40,
+  look: async () => L("A blue mug saying 'I <3 COBOL'. The coffee inside has been cold since the compile started."),
+  pick: async () => { await L("Maybe I could just borrow this one..."); await H("Touch my cup and I will revert your last commit. In production."); await L("Okay, okay. Hands off."); },
+  use: async item => item === 'milk' ? L("Oat milk in Herbert's coffee? He'd taste the 21st century. No.") : item ? DEF.use(OBJ_BY.herbertcup, item) : L("I'd drink it, but the coffee has grown a skin. Pass."),
+  open: async () => L("It's a mug. It's already open. Like Herbert's opinions."),
+  talk: async () => H("Don't talk to my cup. It's shy."),
+});
+
 def({ id: 'herbert', name: 'Herbert', rect: [20, 195, 140, 105], stand: [100, 318], cx: 100,
   look: async () => L("Herbert, senior dev. Has seen every framework come and go. Wrote half of them. In COBOL."),
   talk: async () => talkHerbert(),
@@ -469,11 +477,9 @@ function refreshUI() {
   const iv = $('inv'); iv.innerHTML = '<span class="lbl">Inventory:</span>';
   inv.forEach(id => {
     const it = ITEMS[id], b = document.createElement('button');
-    if (id === 'milk') {
-      const img = document.createElement('img'); img.src = cartonIcon;
-      img.style.cssText = 'height:22px;image-rendering:pixelated;vertical-align:middle;margin-right:6px';
-      b.append(img, it.name);
-    } else b.textContent = it.icon + ' ' + it.name;
+    const ic = ICONS[id], img = document.createElement('img'); img.src = ic.src;
+    img.style.cssText = `height:${ic.h}px;image-rendering:pixelated;vertical-align:middle;margin-right:6px`;
+    b.append(img, it.name);
     if (sel.item === id) b.className = 'on';
     b.onmouseenter = () => { hover = it; sentence(); };
     b.onmouseleave = () => { hover = null; sentence(); };
@@ -573,8 +579,8 @@ function person(p, t) {
   ctx.restore();
 }
 
-function drawMug(x, y, coffee) {
-  R(x, y, 12, 10, '#e74c3c'); R(x + 12, y + 2, 3, 6, '#e74c3c'); R(x + 13, y + 3, 1, 4, '#0b0b12');
+function drawMug(x, y, coffee, col = '#e74c3c') {
+  R(x, y, 12, 10, col); R(x + 12, y + 2, 3, 6, col); R(x + 13, y + 3, 1, 4, '#0b0b12');
   R(x + 1, y + 1, 10, 2, coffee ? '#6b3e1a' : '#fff');
 }
 
@@ -668,18 +674,19 @@ function drawCarton(x, y) {
   R(x, y, 11, 18, '#f5f0e1'); R(x + 1, y - 3, 9, 3, '#d8cfae'); R(x, y, 2, 18, 'rgba(0,0,0,.12)');
   R(x + 2, y + 5, 7, 7, '#e0a458'); R(x + 4, y + 7, 3, 3, '#fff'); R(x, y + 16, 11, 2, 'rgba(0,0,0,.2)');
 }
-// the inventory icon is the same carton, rendered once to an image
-const cartonIcon = (() => {
-  const c = document.createElement('canvas'); c.width = 13; c.height = 22;
-  const main = ctx; ctx = c.getContext('2d'); drawCarton(1, 4); ctx = main;
-  return c.toDataURL();
-})();
+// inventory icons reuse the scene drawings, rendered once to images (with their display height)
+function makeIcon(w, h, draw, scale) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const main = ctx; ctx = c.getContext('2d'); draw(); ctx = main;
+  return { src: c.toDataURL(), h: h * scale };
+}
+const ICONS = { milk: makeIcon(13, 22, () => drawCarton(1, 4), 1), cup: makeIcon(17, 12, () => drawMug(1, 1, false), 1.5) };
 
 function drawScene(t) {
   drawRoom(t); drawCupboard(); drawMachine(t); drawTree(t);
   for (const k of ['herbert', 'gerda']) { const p = P[k], dx = P.hero.x - p.x; p.dir = Math.abs(dx) < 40 ? 0 : Math.sign(dx); person(p, t); }
   drawDesk(20, 140, 118, [[0, 18], [4, 12], [4, 20], [0, 8], [8, 14], [0, 16]], '#3f3');
-  drawMug(30, 240, false); R(31, 241, 10, 2, '#6b3e1a');
+  drawMug(30, 240, true, '#2f7fc9');
   drawDesk(480, 145, 482, [[0, 14], [3, 20], [3, 10], [0, 18], [6, 12], [0, 14]], '#f5a');
   if (!S.milk) drawCarton(585, 232);
   person(P.hero, t);
