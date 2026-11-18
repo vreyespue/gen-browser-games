@@ -102,7 +102,7 @@ let busy = true, started = false, sel = { verb: 'goto', item: null }, hover = nu
 const P = {
   hero:    { x: 330, y: 318, dir: 1, walk: 0, target: null, talk: false, color: '#ffe066', skin: '#f1c27d', hair: '#8b3a1a', top: '#1abc9c', pants: '#2c3e72', style: 'hero' },
   herbert: { x: 100, y: 274, dir: 0, sit: true, talk: false, color: '#8fd3ff', skin: '#e8b894', hair: '#bdbdbd', top: '#8a5a2b', style: 'herbert' },
-  gerda:   { x: 550, y: 274, dir: 0, sit: true, talk: false, color: '#ff9fd0', skin: '#f0c4a0', hair: '#d8d8d8', top: '#8e44ad', style: 'gerda' },
+  gerda:   { x: 550, y: 274, dir: 0, sit: true, talk: false, color: '#ff9fd0', skin: '#f0c4a0', hair: '#e8c85a', top: '#8e44ad', style: 'gerda' },
 };
 
 /* ---------- speech ---------- */
@@ -577,10 +577,13 @@ function drawRoom(t) {
     for (let x = (r % 2) * 40; x < 640; x += 80) R(x, y - 14, 1, 14, '#5a4838');
   }
   // window
-  R(34, 140, 112, 6, '#ddd'); R(40, 50, 100, 90, '#e8e8e8'); R(46, 56, 88, 78, '#b8c4cc');
-  R(60, 66, 24, 6, '#dfe6ea'); R(100, 78, 18, 5, '#dfe6ea');
-  R(46, 118, 88, 16, '#555'); R(70, 112, 24, 10, '#c0392b'); R(74, 108, 14, 6, '#9fd3ff');
-  const sg = (t / 25) % 220 - 40; R(46 + sg, 90 + Math.round(Math.sin(t / 150) * 3), 6, 2, '#fff'); R(48 + sg, 88 + Math.round(Math.sin(t / 150) * 3), 2, 2, '#fff');
+  R(34, 140, 112, 6, '#ddd'); R(40, 50, 100, 90, '#e8e8e8'); R(46, 56, 88, 78, '#a9b6c4');
+  R(46, 118, 88, 16, '#eef3f7'); R(46, 118, 88, 2, '#cfd9e2');
+  R(70, 112, 24, 9, '#c0392b'); R(74, 107, 14, 6, '#9fd3ff'); R(73, 105, 16, 3, '#fff');
+  for (let i = 0; i < 40; i++) {
+    const x = 46 + ((i * 37 + t * .006 * (1 + i % 3) + Math.sin(t / 700 + i) * 4) % 88 + 88) % 88, y = 56 + (i * 53 + t * (.02 + (i % 4) * .008) * 3) % 76;
+    R(x, y, i % 3 ? 2 : 3, i % 3 ? 2 : 3, '#fff');
+  }
   R(88, 56, 4, 78, '#e8e8e8'); R(46, 93, 88, 4, '#e8e8e8');
   // banner
   R(255, 12, 2, 10, '#555'); R(493, 12, 2, 10, '#555');
