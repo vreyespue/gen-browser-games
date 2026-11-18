@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>The Curse of the Coffee Machine</title>
+<style>
+  html,body{margin:0;background:#0b0b12;color:#eee;font-family:"Courier New",monospace;min-height:100%}
+  #game{max-width:960px;margin:0 auto;padding:8px;box-sizing:border-box;user-select:none;-webkit-user-select:none}
+  #scene{position:relative;width:100%;aspect-ratio:16/9;border:3px solid #444;background:#000;overflow:hidden;box-sizing:border-box}
+  canvas{width:100%;height:100%;display:block;image-rendering:pixelated;cursor:crosshair}
+  #speech{position:absolute;transform:translate(-50%,-100%);max-width:34%;text-align:center;font-weight:bold;
+    font-size:clamp(11px,2.4vw,22px);line-height:1.15;pointer-events:none;display:none;
+    text-shadow:2px 2px 0 #000,-2px 2px 0 #000,2px -2px 0 #000,-2px -2px 0 #000,0 2px 0 #000,0 -2px 0 #000,2px 0 0 #000,-2px 0 0 #000}
+  .overlay{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;
+    background:rgba(5,5,15,.88);text-align:center;padding:16px;box-sizing:border-box}
+  #title{display:flex;cursor:pointer}
+  .overlay h1{color:#ffd23f;font-size:clamp(18px,4.5vw,40px);margin:0 0 8px;text-shadow:3px 3px 0 #b23a00}
+  .overlay p{font-size:clamp(11px,2vw,16px);max-width:80%;margin:6px 0}
+  .blink{animation:b 1s steps(2) infinite;color:#5ff}
+  @keyframes b{50%{opacity:0}}
+  button{font:inherit;color:#ddd;background:#2a2340;border:2px solid #5b4b8a;padding:6px 8px;cursor:pointer;border-radius:3px}
+  button:hover{background:#3d3360;color:#ffd23f}
+  button.on{background:#5b4b8a;color:#fff}
+  #modal input{font:inherit;font-size:18px;padding:6px 10px;width:min(280px,70%);text-align:center;text-transform:uppercase;
+    background:#001a00;color:#3f3;border:2px solid #3f3;outline:none;margin:8px 0}
+  #modal .row{display:flex;gap:8px}
+  #sentence{height:1.6em;line-height:1.6em;text-align:center;color:#5ff;font-size:clamp(13px,2.4vw,20px);margin:6px 0}
+  #verbs{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+  #inv{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;min-height:42px;padding:4px;border:2px dashed #3a3358;border-radius:3px;align-items:center}
+  #inv .lbl{color:#776;font-size:12px;margin-right:4px}
+  #choices{display:none}
+  #choices button{display:block;width:100%;text-align:left;margin-bottom:4px;color:#ffd23f}
+  #sound{position:absolute;right:4px;top:4px;padding:2px 6px;font-size:14px;z-index:5}
+</style>
+</head>
+<body>
+<div id="game">
+  <div id="scene">
+    <canvas id="cv" width="640" height="360"></canvas>
+    <div id="speech"></div>
+    <button id="sound" title="Toggle sound">🔊</button>
+    <div id="title" class="overlay">
+      <h1>THE CURSE OF<br>THE COFFEE MACHINE</h1>
+      <p>A tiny point-and-click adventure about one developer, one cup and zero oat milk.</p>
+      <p>Pick a verb, then click something. Right-click = look at.</p>
+      <p class="blink">&gt; click to start &lt;</p>
+    </div>
+    <div id="modal" class="overlay">
+      <p id="mtitle" style="font-size:clamp(14px,2.6vw,22px);color:#3f3"></p>
+      <p id="msub" style="color:#8a8"></p>
+      <input id="minput" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="40">
+      <div class="row"><button id="mok">OK</button><button id="mcancel">Cancel</button></div>
+    </div>
+    <div id="end" class="overlay">
+      <h1>THE END</h1>
+      <p>Lena finally had her coffee.</p>
+      <p>Production went down at 9:41.</p>
+      <p>Nobody noticed until Wednesday.</p>
+      <p style="color:#888">Thanks for playing!</p>
+      <button id="again" style="margin-top:12px">Play again</button>
+    </div>
+  </div>
+  <div id="sentence">&nbsp;</div>
+  <div id="ui">
+    <div id="verbs"></div>
+    <div id="inv"></div>
+  </div>
+  <div id="choices"></div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const rnd = a => a[Math.floor(Math.random() * a.length)];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* ---------- audio ---------- */
+let AC = null, soundOn = true;
+function beep(f = 440, d = .08, type = 'square', v = .05, when = 0) {
+  if (!soundOn) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    const t = AC.currentTime + when, o = AC.createOscillator(), g = AC.createGain();
+    o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+    o.connect(g).connect(AC.destination); o.start(t); o.stop(t + d);
+  } catch (e) {}
+}
+const jingle = notes => notes.forEach((n, i) => beep(n, .15, 'square', .06, i * .12));
+$('sound').onclick = () => { soundOn = !soundOn; $('sound').textContent = soundOn ? '🔊' : '🔇'; };
+
+/* ---------- state ---------- */
+const S = { open: false, cup: false, milk: false, heardCode: false, gaveHelp: false, heardRiddle: false,
+  solved: false, wrong: 0, metH: false, metG: false, brewing: false, cupOnMachine: false, done: false };
+const inv = [];
+const has = id => inv.includes(id);
+let busy = true, started = false, sel = { verb: 'goto', item: null }, hover = null;
+
+const P = {
+  hero:    { x: 330, y: 318, dir: 1, walk: 0, target: null, talk: false, color: '#ffe066', skin: '#f1c27d', hair: '#8b3a1a', top: '#1abc9c', pants: '#2c3e72', style: 'hero' },
+  herbert: { x: 100, y: 274, dir: 0, sit: true, talk: false, color: '#8fd3ff', skin: '#e8b894', hair: '#bdbdbd', top: '#8a5a2b', style: 'herbert' },
+  gerda:   { x: 550, y: 274, dir: 0, sit: true, talk: false, color: '#ff9fd0', skin: '#f0c4a0', hair: '#d8d8d8', top: '#8e44ad', style: 'gerda' },
+};
+
+/* ---------- speech ---------- */
+let speechRes = null, speechTimer = null;
+function say(who, text) {
+  return new Promise(res => {
+    const p = P[who], el = $('speech');
+    el.textContent = text;
+    el.style.color = p.color;
+    el.style.left = clamp(p.x, 110, 530) / 640 * 100 + '%';
+    el.style.top = (p.y - 76) / 360 * 100 + '%';
+    el.style.display = 'block';
+    p.talk = true;
+    beep(p.style === 'herbert' ? 110 : p.style === 'gerda' ? 260 : 330, .06, 'triangle', .06);
+    const done = () => { clearTimeout(speechTimer); el.style.display = 'none'; p.talk = false; speechRes = null; res(); };
+    speechRes = done;
+    speechTimer = setTimeout(done, Math.max(1500, 700 + text.length * 55));
+  });
+}
+const L = t => say('hero', t), H = t => say('herbert', t), G = t => say('gerda', t);
+
+/* ---------- walking ---------- */
+function walkTo(x, y) {
+  return new Promise(res => { P.hero.target = { x: clamp(x, 20, 620), y: clamp(y, 300, 348), res }; });
+}
+function face(cx) { const dx = cx - P.hero.x; P.hero.dir = Math.abs(dx) < 14 ? 0 : Math.sign(dx); }
+
+/* ---------- dialogs / input ---------- */
+let choosing = false, modalOpen = false;
+function choose(opts) {
+  return new Promise(res => {
+    const box = $('choices'); box.innerHTML = ''; choosing = true;
+    opts.forEach((o, i) => {
+      const b = document.createElement('button'); b.textContent = o.t;
+      b.onclick = () => { box.style.display = 'none'; $('ui').style.display = ''; choosing = false; res(o.id); };
+      box.appendChild(b);
+    });
+    box.style.display = 'block'; $('ui').style.display = 'none';
+  });
+}
+function ask(title, sub) {
+  return new Promise(res => {
+    const inp = $('minput');
+    $('mtitle').textContent = title; $('msub').textContent = sub || ''; inp.value = '';
+    $('modal').style.display = 'flex'; modalOpen = true; inp.focus();
+    const close = v => { $('modal').style.display = 'none'; modalOpen = false; res(v); };
+    $('mok').onclick = () => close(inp.value.trim());
+    $('mcancel').onclick = () => close(null);
+    inp.onkeydown = e => { if (e.key === 'Enter') close(inp.value.trim()); if (e.key === 'Escape') close(null); };
+  });
+}
+
+/* ---------- items ---------- */
+function addItem(id) { inv.push(id); jingle([523, 659, 784]); refreshUI(); }
+function removeItem(id) { inv.splice(inv.indexOf(id), 1); refreshUI(); }
+
+const ITEMS = {
+  cup: { inv: true, id: 'cup', name: 'cup', icon: '☕',
+    look: async () => L("A mug that says 'World's Okayest Developer'. Brutally honest."),
+    use: async o => o === 'milk' ? L("Milk first? Then there's no room for coffee. Priorities, Lena.") : DEF.use(ITEMS.cup, o) },
+  milk: { inv: true, id: 'milk', name: 'oat milk', icon: '🥛',
+    look: async () => L("Oat milk, barista edition. 'GERDA - HANDS OFF' in marker. Technically I was given it. Legally fine."),
+    use: async o => o === 'cup' ? L("Milk first? Then there's no room for coffee. Priorities, Lena.") : DEF.use(ITEMS.milk, o) },
+};
+
+/* ---------- default responses ---------- */
+const DEF = {
+  look: o => L(rnd([`Just a ${o.name}. I've seen more exciting things in a Jira backlog.`, `A ${o.name}. Still no coffee, though.`])),
+  pick: o => L(o.inv ? "It's already in my pockets. Deep ones." :
+    rnd([`I can't pick up the ${o.name}. I once tried with a legacy codebase. Never again.`, `The ${o.name} stays. My back and I agreed on that.`])),
+  talk: o => L(rnd([`The ${o.name} doesn't answer. Best code review I've ever had.`, `I talk to the ${o.name}. It listens. That's already better than most meetings.`])),
+  open: o => L(rnd([`The ${o.name} doesn't open. It's not a pull request.`, `I can't open that. Believe me, I tried the sudo way.`])),
+  close: o => L(rnd([`It's already closed. Like my mind before coffee.`, `Nothing to close there. Unlike my laptop at 6 pm.`])),
+  use: (o, item) => L(item ? rnd([`I try the ${ITEMS[item].name} on the ${o.name}. Nothing happens. Classic.`, `The ${ITEMS[item].name} and the ${o.name} refuse to integrate.`]) :
+    rnd([`I can't figure out how to use the ${o.name}. And there's no documentation.`, `Using the ${o.name} would be creative. Not productive, though.`])),
+  push: o => L(rnd([`I push the ${o.name}. It pushes back. Emotionally.`, `Pushing straight to production is bad. Pushing the ${o.name} is just silly.`])),
+  pull: o => L(rnd([`Pull? Nope. I only do pull requests.`, `The ${o.name} refuses to be pulled. Fair enough.`])),
+  give: (o, item) => L(`I don't think the ${o.name} wants the ${ITEMS[item].name}.`),
+};
+
+/* ---------- scene objects ---------- */
+const OBJ = [];
+const def = o => (OBJ.push(o), o);
+
+def({ id: 'cup', name: 'cup', rect: [222, 198, 18, 16], stand: [240, 316], cx: 240, visible: () => S.open && !S.cup,
+  look: async () => ITEMS.cup.look(),
+  pick: async () => { S.cup = true; await L("Mine now. Finders keepers, as per the company handbook, section 'Mugs'."); addItem('cup'); },
+});
+
+def({ id: 'cupboard', name: 'cupboard', rect: [197, 70, 86, 190], stand: [240, 316], cx: 240,
+  look: async () => S.open ? L(S.cup ? "Empty now. Just the faint smell of 2009." : "Mostly dust. And one lonely cup.") :
+    L("A sturdy cupboard with a keypad. It accepts letters AND numbers. Security by Herbert."),
+  open: async () => tryCupboard(),
+  use: async item => item ? DEF.use(OBJ_BY.cupboard, item) : tryCupboard(),
+  close: async () => { if (S.open) { S.open = false; beep(180, .15, 'sawtooth'); await L("Closed. It auto-locks. Presumably out of spite."); } else await L("It's already closed. And locked. And judging me."); },
+  pick: async () => L("Too heavy. Also IT would send me an email about it."),
+});
+
+def({ id: 'machine', name: 'coffee machine', rect: [291, 146, 93, 114], stand: [330, 316], cx: 330,
+  look: async () => L("A fully automatic coffee machine. Costs more than my first car. Runs on Java, naturally."),
+  push: async () => { beep(70, .3, 'sawtooth'); await L("I smack it gently. It beeps: 'PLEASE INSERT CUP'. Fair."); },
+  use: async item => {
+    if (item && item !== 'cup' && item !== 'milk') return DEF.use(OBJ_BY.machine, item);
+    if (has('cup') && has('milk')) return brew();
+    if (has('cup')) return L("Black coffee? I'm a developer, not a barbarian. I need oat milk. Gerda has some.");
+    if (has('milk')) return L("Pour oat milk straight in the machine? It would sue me. I need a cup first.");
+    return L("I need a cup. And oat milk, because I'm not a monster.");
+  },
+});
+
+def({ id: 'plant', name: 'plant', rect: [160, 200, 36, 60], stand: [178, 316], cx: 178,
+  look: async () => L("A ficus. It has survived three reorganisations and Herbert's coffee. Respect."),
+  talk: async () => L("Hello, plant. ...You're the best listener in this office."),
+  pick: async () => L("It has roots. Emotional ones too."),
+  use: async item => item ? L("Wasting good stuff on a ficus? Gerda would know. She always knows.") : DEF.use(OBJ_BY.plant),
+});
+
+def({ id: 'window', name: 'window', rect: [34, 50, 112, 96], stand: [90, 316], cx: 90,
+  look: async () => L("Outside: grey sky, a parking lot and a seagull stealing fries. Weather: 'Grey, with a chance of grey'."),
+  open: async () => L("Painted shut. In 1998. By someone who really hated fresh air."),
+});
+
+def({ id: 'banner', name: 'banner', rect: [250, 20, 250, 38], stand: [375, 316], cx: 375,
+  look: async () => L("'ACME CODEWORKS - 100 YEARS OF SHIPPING!' And in tiny letters: '(Mostly on time)'."),
+  pick: async () => L("It's hanging higher than my sprint velocity."),
+});
+
+def({ id: 'poster', name: 'cat poster', rect: [520, 80, 60, 50], stand: [550, 316], cx: 550,
+  look: async () => L("A cat dangling from a branch. 'HANG IN THERE. PRODUCTION IS DOWN.' Relatable."),
+  talk: async () => L("Meow? ...No? Okay."),
+});
+
+def({ id: 'door', name: 'door', rect: [400, 88, 55, 172], stand: [428, 316], cx: 428,
+  look: async () => L("The exit. I'm not leaving until I've had coffee. Possibly not after either."),
+  open: async () => L("Leave without coffee? Even the door knows that's a terrible idea."),
+  use: async () => L("Leave without coffee? Even the door knows that's a terrible idea."),
+});
+
+def({ id: 'herbert', name: 'Herbert', rect: [20, 195, 140, 105], stand: [100, 318], cx: 100,
+  look: async () => L("Herbert, senior dev. Has seen every framework come and go. Wrote half of them. In COBOL."),
+  talk: async () => talkHerbert(),
+  pick: async () => L("Herbert weighs at least one legacy codebase. No."),
+  push: async () => L("Pushing Herbert? He'd ask me to file a ticket first."),
+  pull: async () => L("Pulling Herbert's leg is for later. After the cup."),
+  open: async () => L("Open Herbert? I'm a developer, not a surgeon."),
+  use: async item => item ? DEF.use(OBJ_BY.herbert, item) : L("Use Herbert? I mean... his knowledge. Let's talk instead."),
+  give: async item => item === 'milk'
+    ? (await H("Oat milk? In my day milk came from a cow and we were GRATEFUL."))
+    : (await H("An empty cup? Thanks. Is it a metaphor for my career?")),
+});
+
+def({ id: 'gerda', name: 'Gerda', rect: [480, 195, 145, 105], stand: [550, 318], cx: 550,
+  look: async () => L("Gerda, lead dev. The only person who reads the whole pull request. And the commit messages. And the comments."),
+  talk: async () => talkGerda(),
+  pick: async () => L("Gerda looks at me. I decide to leave her on the ground. I mean, desk."),
+  push: async () => L("No. Just no. I value my code reviews."),
+  pull: async () => L("I'd rather not pull anything with Gerda around. She'd review it."),
+  open: async () => L("Open Gerda? She's the one who opens my bugs."),
+  use: async item => item ? DEF.use(OBJ_BY.gerda, item) : L("Use Gerda? She'd bill me for the consulting. Let's talk."),
+  give: async item => item === 'cup'
+    ? (await G("Nice mug. Still not telling you the answer."))
+    : (await G("Hey, that's mine! I mean, thanks for returning it, I suppose.")),
+});
+const OBJ_BY = Object.fromEntries(OBJ.map(o => [o.id, o]));
+
+function hit(x, y) {
+  return OBJ.find(o => (!o.visible || o.visible()) && x >= o.rect[0] && x <= o.rect[0] + o.rect[2] && y >= o.rect[1] && y <= o.rect[1] + o.rect[3]) || null;
+}
+
+/* ---------- puzzles & dialogues ---------- */
+async function tryCupboard() {
+  if (S.open) return L(S.cup ? "It's open and empty. Nothing left to do here." : "It's open. The cup is waiting for me.");
+  await L("A keypad. Let's see...");
+  const raw = await ask('KEYPAD - ENTER CODE:', '(letters AND numbers accepted. Welcome to 2009.)');
+  if (raw === null) return L("On second thought, I should think about this code a bit more.");
+  const c = raw.toUpperCase().replace(/\s+/g, '');
+  if (c === 'REWE100') {
+    S.open = true; jingle([392, 523, 659, 784]);
+    await sleep(300);
+    return L("Click! The cupboard opens with a creak older than our codebase. There's a cup in there!");
+  }
+  beep(120, .4, 'sawtooth', .07);
+  if (c === '1234' || c === '0000') return L("The keypad beeps: 'Even Herbert isn't that lazy.'");
+  if (c === 'PASSWORD') return L("The keypad beeps: 'Herbert is old school, not THAT old school.'");
+  if (c === 'REWE') return L("The keypad beeps: 'Right supermarket. Needs more years.'");
+  if (/^\d+$/.test(c)) return L("The keypad beeps: 'Needs more supermarket.'");
+  if (/^(ALDI|LIDL|EDEKA|KAUFLAND|PENNY|NETTO)/.test(c)) return L("The keypad beeps: 'WRONG DISCOUNTER. Herbert would disown you.'");
+  if (c.startsWith('REWE')) return L("Right supermarket, wrong age. The company isn't THAT young. Or old.");
+  return L(rnd(["Access denied. The keypad beeps judgmentally.", "Wrong. The keypad sighs audibly. Keypads can do that, apparently.", "Nope. Maybe I should ask Herbert instead of guessing."]));
+}
+
+async function talkHerbert() {
+  if (!S.metH) { S.metH = true; await L("Hi Herbert!"); await H("Shh. I'm in the middle of a compile. It's been running since 2014."); }
+  else await H("Back again? Be quick, my compile is in a delicate phase.");
+  while (true) {
+    const o = [];
+    if (!S.heardCode) o.push({ id: 'code', t: "Herbert, do you know the code for the cupboard?" });
+    else {
+      o.push({ id: 'rep', t: "Could you repeat the hint?" });
+      if (!S.gaveHelp) o.push({ id: 'help', t: "That's not helpful. I need more, Herbert." });
+    }
+    if (S.heardRiddle && !S.solved) o.push({ id: 'riddle', t: "Gerda gave me a riddle about keys..." });
+    o.push({ id: 'how', t: "How are you, Herbert?" });
+    o.push({ id: 'bye', t: "Never mind. See you!" });
+    const c = await choose(o);
+    if (c === 'bye') { await H("Hrmph."); return; }
+    if (c === 'code') {
+      S.heardCode = true;
+      await L("I need a cup. You know the code to the cupboard, right?");
+      await H("Ah, the cupboard. Guardian of the cups. Yes. I set the code myself, in 2009.");
+      await L("Great! What is it?");
+      await H("Oh, I won't just TELL you. That would be insecure. Listen carefully, young one:");
+      await H("The code is the best supermarket in Germany, plus the number of years the company is.");
+      await L("...That's the hint?");
+      await H("That's the hint. I won't say it twice. Well, I will, but I'll sigh.");
+    } else if (c === 'rep') {
+      await H(S.gaveHelp ? "Best supermarket in Germany. Years of the company. No spaces. I'm sighing now." : "The best supermarket in Germany, plus the number of years the company is. *sigh*");
+    } else if (c === 'help') {
+      S.gaveHelp = true;
+      await L("Herbert, I have a deadline. A deadline of COFFEE.");
+      await H("Hmm. Fine. The supermarket: four letters. Capitals, naturally. We are not savages.");
+      await L("And the years?");
+      await H("The company hangs a giant banner above your head every day. Look up. Literally.");
+      await L("And no spaces, I guess.");
+      await H("Now you're getting it. Almost like a real developer.");
+    } else if (c === 'riddle') {
+      await L("Gerda asked me about something with keys but no doors...");
+      await H("Ah, her riddle. She asks everyone. Think about what your fingers touch more than your family.");
+      await H("It's probably right in front of you. Possibly with crumbs in it. Stop looking at me like that.");
+    } else if (c === 'how') {
+      await H("Terrible. They replaced my COBOL system with a 'microservice'. It's ONE function. It needs 14 containers to say hello.");
+      await L("Sounds rough.");
+      await H("I've seen things. Mostly Jira tickets.");
+    }
+  }
+}
+
+const RIDDLE = "I have keys but open no doors. I have space but no room. You can enter, but never leave. What am I?";
+async function talkGerda() {
+  if (S.milk) {
+    await G("Oh, it's you. You still have my milk. You owe me nothing. Except silence about the intern.");
+  } else if (!S.metG) {
+    S.metG = true;
+    await L("Hi Gerda! Could I borrow some of your oat milk? I'll replace it, promise.");
+    await G("My oat milk? The one labelled 'GERDA - HANDS OFF' in permanent marker?");
+    await G("The last intern drank it. We don't talk about the intern. He works in sales now.");
+    await G("But I like you. Solve my riddle and it's yours.");
+    S.heardRiddle = true;
+    await G(RIDDLE);
+  } else await G("Yes?");
+  while (true) {
+    const o = [];
+    if (!S.milk) {
+      o.push({ id: 'ready', t: S.heardRiddle ? "I'm ready to answer your riddle." : "Could I borrow some of your oat milk?" });
+      if (S.heardRiddle) o.push({ id: 'rep', t: "Could you repeat the riddle?" });
+    }
+    o.push({ id: 'work', t: "What are you working on?" });
+    o.push({ id: 'bye', t: "See you later, Gerda." });
+    const c = await choose(o);
+    if (c === 'bye') { await G("Mhm."); return; }
+    if (c === 'work') {
+      await G("A spreadsheet. Don't tell the CTO it runs the whole company.");
+      await L("How many tabs?");
+      await G("Forty-two. And macros. Everything depends on cell Q17. Nobody touch Q17.");
+    } else if (c === 'rep') {
+      await G(RIDDLE);
+    } else if (c === 'ready') {
+      if (!S.heardRiddle) {
+        S.heardRiddle = true;
+        await G("Ah, the milk. Solve my riddle and it's yours.");
+        await G(RIDDLE);
+      }
+      if (await riddle()) return;
+    }
+  }
+}
+
+async function riddle() {
+  const raw = await ask("GERDA'S RIDDLE - YOUR ANSWER:", RIDDLE);
+  if (raw === null) { await L("Um... let me think about it a bit."); return false; }
+  const a = raw.toLowerCase().replace(/[^a-zäöü ]/g, '').replace(/^(a|an|the) /, '').trim();
+  if (/keyboard|tastatur/.test(a)) {
+    S.solved = true;
+    await G("CORRECT! A keyboard. And you didn't even google it. I'm impressed.");
+    await G("A deal is a deal. Here's the milk. Don't tell the intern.");
+    S.milk = true; addItem('milk');
+    await L("Oat milk acquired! I feel like I've defeated a boss.");
+    return true;
+  }
+  S.wrong++;
+  if (/escape/.test(a)) await G("There IS an Escape key, smart-aleck. But no. Think about the whole thing.");
+  else if (/door|lock/.test(a)) await G("Keys but open no DOORS. Were you listening?");
+  else if (/piano/.test(a)) await G("Pianos have no Enter key. Creative, though. Nice taste in music.");
+  else if (/laptop|computer|pc|mac/.test(a)) await G("Close! But a computer is the whole thing. Narrow it down.");
+  else if (/stack ?overflow|google|chat ?gpt|ai/.test(a)) await G("Ha! No. You'd find it in four seconds, flagged as a duplicate. And don't let Herbert hear that.");
+  else if (/cat/.test(a)) await G("A cat? Walks on it, sure. But no.");
+  else await G(rnd(["No. Wrong. Not even close. ...Okay, a little close.", "Nope. Herbert would have gotten it in 10 minutes. 9 of them complaining.", "Wrong. I'm writing it in your performance review."]));
+  if (S.wrong >= 2) await G("Hint: you're probably touching one every day. Possibly with coffee crumbs in it.");
+  return false;
+}
+
+async function brew() {
+  await L("Right. Cup in, oat milk ready. Let's do this.");
+  removeItem('cup'); removeItem('milk');
+  S.cupOnMachine = true; S.brewing = true;
+  const iv = setInterval(() => beep(70 + Math.random() * 60, .1, 'sawtooth', .04), 110);
+  await sleep(3200);
+  clearInterval(iv);
+  S.brewing = false;
+  jingle([784, 988, 1175]);
+  await L("Behold: coffee with oat milk. Bean-scented, caffeinated perfection.");
+  S.cupOnMachine = false; P.hero.drink = true; P.hero.dir = 0;
+  await sleep(500);
+  await L("*slurp* ...Oh. Oh wow. I can see colours again. I can hear the Jira notifications.");
+  await L("I can even hear Herbert.");
+  await H("Is that oat milk? FROM GERDA?!");
+  await G("She earned it, Herbert. She solved my riddle. You never even tried.");
+  await H("I was busy. Compiling.");
+  await G("Since 2014.");
+  await L("Right. Time to deploy something. On a Monday. What could possibly go wrong?");
+  await H("NOOOOO!");
+  await G("NOOOOO!");
+  S.done = true;
+  jingle([523, 523, 784, 784, 880, 880, 784]);
+  $('end').style.display = 'flex';
+}
+
+/* ---------- command execution ---------- */
+async function run(verb, tgt, item) {
+  busy = true;
+  try {
+    if (!tgt.inv) { await walkTo(tgt.stand[0], tgt.stand[1]); face(tgt.cx); }
+    if (verb === 'goto') { if (tgt.inv) await (tgt.look || DEF.look)(tgt); }
+    else await (tgt[verb] ? tgt[verb](item) : DEF[verb](tgt, item));
+  } finally {
+    busy = false; sel = { verb: 'goto', item: null }; refreshUI();
+  }
+}
+
+/* ---------- UI ---------- */
+const VERBS = [['goto', 'Go to'], ['look', 'Look at'], ['pick', 'Pick up'], ['talk', 'Talk to'], ['open', 'Open'],
+  ['close', 'Close'], ['use', 'Use'], ['give', 'Give'], ['push', 'Push'], ['pull', 'Pull']];
+
+function sentence() {
+  let s = VERBS.find(v => v[0] === sel.verb)[1];
+  if (sel.item) s += ' ' + ITEMS[sel.item].name + (sel.verb === 'give' ? ' to' : ' with');
+  if (hover) s += ' ' + hover.name;
+  $('sentence').textContent = s;
+}
+function refreshUI() {
+  const vb = $('verbs'); vb.innerHTML = '';
+  VERBS.forEach(([id, label]) => {
+    const b = document.createElement('button'); b.textContent = label;
+    if (sel.verb === id) b.className = 'on';
+    b.onclick = () => { if (busy || choosing) return; sel = { verb: id, item: null }; refreshUI(); };
+    vb.appendChild(b);
+  });
+  const iv = $('inv'); iv.innerHTML = '<span class="lbl">Inventory:</span>';
+  inv.forEach(id => {
+    const it = ITEMS[id], b = document.createElement('button');
+    b.textContent = it.icon + ' ' + it.name;
+    if (sel.item === id) b.className = 'on';
+    b.onmouseenter = () => { hover = it; sentence(); };
+    b.onmouseleave = () => { hover = null; sentence(); };
+    b.onclick = () => invClick(id);
+    iv.appendChild(b);
+  });
+  sentence();
+}
+function invClick(id) {
+  if (busy || choosing || modalOpen) return;
+  const it = ITEMS[id];
+  if (sel.verb === 'use' || sel.verb === 'give') {
+    if (!sel.item) { sel.item = id; refreshUI(); return; }
+    if (sel.item === id) return;
+    if (sel.verb === 'use') return run('use', it, sel.item);
+    sel = { verb: 'goto', item: null }; refreshUI(); return;
+  }
+  run(sel.verb, it, null);
+}
+
+function pt(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * 640, y: (e.clientY - r.top) / r.height * 360 }; }
+cv.addEventListener('mousemove', e => { const p = pt(e); hover = hit(p.x, p.y); sentence(); });
+cv.addEventListener('mouseleave', () => { hover = null; sentence(); });
+cv.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  if (!started || busy || choosing || modalOpen) return;
+  const p = pt(e), o = hit(p.x, p.y);
+  if (o) run('look', o, null);
+});
+cv.addEventListener('click', e => {
+  if (!started) return;
+  if (speechRes) { speechRes(); return; }
+  if (busy || choosing || modalOpen) return;
+  const p = pt(e), o = hit(p.x, p.y);
+  if (!o) {
+    if (sel.verb === 'goto') { busy = true; walkTo(p.x, p.y).then(() => { busy = false; }); }
+    return;
+  }
+  if (sel.verb === 'give' && !sel.item) { busy = true; L("Give what? I should pick something from my inventory first.").then(() => { busy = false; }); return; }
+  run(sel.verb, o, sel.item);
+});
+$('title').onclick = async () => {
+  $('title').style.display = 'none'; started = true; beep(660, .1);
+  await L("Monday, 9:07. My brain is running on 0.2 percent battery.");
+  await L("I need coffee. Badly. This is a matter of life and deployment.");
+  busy = false;
+};
+$('again').onclick = () => location.reload();
+
+/* ---------- drawing ---------- */
+function R(x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), w, h); }
+
+function person(p, t) {
+  const talk = p.talk && Math.floor(t / 110) % 2 === 0;
+  const sw = p.target ? Math.round(Math.sin(p.walk) * 5) : 0;
+  const bob = p.target ? -Math.round(Math.abs(Math.sin(p.walk)) * 2) : 0;
+  const d = p.dir;
+  ctx.save(); ctx.translate(Math.round(p.x), Math.round(p.y + bob));
+  if (!p.sit) {
+    ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(0, 1 - bob, 14, 4, 0, 0, 7); ctx.fill();
+    const la = Math.max(0, sw), lb = Math.max(0, -sw);
+    R(-8, -24, 7, 24 - la, p.pants); R(1, -24, 7, 24 - lb, p.pants);
+    R(-9, -3 - la, 9, 3, '#f4f4f4'); R(0, -3 - lb, 9, 3, '#f4f4f4');
+  }
+  R(-15, -45 + Math.round(sw * .4), 5, 18, p.top); R(10, -45 - Math.round(sw * .4), 5, 18, p.top);
+  R(-15, -28 + Math.round(sw * .4), 5, 4, p.skin); R(10, -28 - Math.round(sw * .4), 5, 4, p.skin);
+  R(-11, -46, 22, 22, p.top);
+  if (p.style === 'hero') {
+    R(-11, -34, 22, 2, '#16a085'); R(-7, -47, 14, 4, '#16a085'); R(-3, -43, 1, 6, '#fff'); R(2, -43, 1, 6, '#fff');
+  } else if (p.style === 'herbert') {
+    R(-4, -46, 8, 16, '#f2f2f2'); R(-1, -45, 2, 11, '#c0392b');
+  } else {
+    R(-6, -46, 12, 3, '#f6e0ff'); R(-5, -43, 10, 1, '#fff');
+  }
+  // head
+  R(-7, -62, 14, 16, p.skin); R(-8, -60, 16, 12, p.skin);
+  if (p.style === 'hero') {
+    const px = d > 0 ? -15 : d < 0 ? 10 : -14, so = Math.round(sw / 2);
+    R(-9, -64, 18, 5, p.hair); R(-9, -60, 3, 9, p.hair); R(6, -60, 3, 9, p.hair); R(-7, -60, 14, 2, p.hair);
+    R(px, -62 + so, 5, 18, p.hair); R(px, -61 + so, 5, 2, '#e74c3c');
+  } else if (p.style === 'herbert') {
+    R(-9, -58, 3, 9, p.hair); R(6, -58, 3, 9, p.hair);
+    R(-8, -53, 16, 7, p.hair); R(-7, -46, 14, 1, p.hair);
+  } else {
+    R(-9, -64, 18, 5, p.hair); R(-9, -60, 3, 10, p.hair); R(6, -60, 3, 10, p.hair);
+    R(-4, -70, 8, 6, p.hair); R(-3, -71, 6, 2, p.hair);
+  }
+  if (p.style === 'herbert' || p.style === 'gerda') {
+    const gc = p.style === 'herbert' ? '#222' : '#c0392b';
+    R(-7, -58, 6, 5, gc); R(1, -58, 6, 5, gc); R(-6, -57, 4, 3, '#dff'); R(2, -57, 4, 3, '#dff'); R(-1, -57, 2, 1, gc);
+    R(-5 + d, -56, 2, 2, '#111'); R(3 + d, -56, 2, 2, '#111');
+  } else {
+    R(-5 + d * 2, -56, 2, 2, '#111'); R(3 + d * 2, -56, 2, 2, '#111');
+  }
+  R(-2 + d, -50, 4, talk ? 3 : 1, p.style === 'gerda' ? '#c0392b' : '#7a2b2b');
+  if (p.drink) { R(4, -54, 11, 9, '#e74c3c'); R(5, -53, 9, 2, '#fff'); R(15, -52, 3, 5, '#e74c3c'); }
+  ctx.restore();
+}
+
+function drawMug(x, y, coffee) {
+  R(x, y, 12, 10, '#e74c3c'); R(x + 12, y + 2, 3, 6, '#e74c3c'); R(x + 13, y + 3, 1, 4, '#0b0b12');
+  R(x + 1, y + 1, 10, 2, coffee ? '#6b3e1a' : '#fff');
+}
+
+function drawRoom(t) {
+  // wall + floor
+  R(0, 0, 640, 260, '#8db3ab'); R(0, 200, 640, 60, '#6f9a92'); R(0, 198, 640, 3, '#4f7a72');
+  R(0, 260, 640, 100, '#6b5846'); R(0, 260, 640, 3, '#3d3126');
+  for (let y = 274, r = 0; y < 360; y += 14, r++) {
+    R(0, y, 640, 1, '#5a4838');
+    for (let x = (r % 2) * 40; x < 640; x += 80) R(x, y - 14, 1, 14, '#5a4838');
+  }
+  // window
+  R(34, 140, 112, 6, '#ddd'); R(40, 50, 100, 90, '#e8e8e8'); R(46, 56, 88, 78, '#b8c4cc');
+  R(60, 66, 24, 6, '#dfe6ea'); R(100, 78, 18, 5, '#dfe6ea');
+  R(46, 118, 88, 16, '#555'); R(70, 112, 24, 10, '#c0392b'); R(74, 108, 14, 6, '#9fd3ff');
+  const sg = (t / 25) % 220 - 40; R(46 + sg, 90 + Math.round(Math.sin(t / 150) * 3), 6, 2, '#fff'); R(48 + sg, 88 + Math.round(Math.sin(t / 150) * 3), 2, 2, '#fff');
+  R(88, 56, 4, 78, '#e8e8e8'); R(46, 93, 88, 4, '#e8e8e8');
+  // banner
+  R(255, 12, 2, 10, '#555'); R(493, 12, 2, 10, '#555');
+  R(250, 20, 250, 38, '#e8c547'); R(250, 20, 250, 3, '#b8932a'); R(250, 55, 250, 3, '#b8932a');
+  ctx.textAlign = 'center'; ctx.fillStyle = '#7a1f1f'; ctx.font = 'bold 14px "Courier New"';
+  ctx.fillText('ACME CODEWORKS', 375, 36); ctx.font = 'bold 10px "Courier New"'; ctx.fillText('100 YEARS OF SHIPPING!', 375, 50);
+  // poster
+  R(520, 80, 60, 50, '#5a3b1f'); R(524, 84, 52, 42, '#f2e6c9');
+  R(522, 96, 56, 3, '#6b4a2b'); R(544, 100, 10, 8, '#d98c3f'); R(544, 98, 2, 3, '#d98c3f'); R(552, 98, 2, 3, '#d98c3f'); R(548, 108, 2, 8, '#d98c3f');
+  // door
+  R(400, 88, 55, 172, '#7a4a2a'); R(406, 100, 43, 70, '#8d5a35'); R(406, 178, 43, 76, '#8d5a35'); R(440, 176, 5, 5, '#e8c547');
+  R(412, 76, 30, 10, '#2ecc71'); ctx.font = 'bold 8px "Courier New"'; ctx.fillStyle = '#063'; ctx.fillText('EXIT', 427, 84);
+}
+
+function drawCupboard() {
+  if (!S.open) {
+    R(205, 70, 70, 190, '#a9744a'); R(205, 70, 70, 4, '#c9946a'); R(239, 74, 2, 186, '#7a4f2b');
+    R(230, 160, 4, 20, '#e8c547'); R(246, 160, 4, 20, '#e8c547');
+    R(258, 140, 12, 22, '#222'); R(260, 142, 8, 3, '#3f3'); R(260, 148, 3, 3, '#999'); R(265, 148, 3, 3, '#999'); R(260, 153, 3, 3, '#999'); R(265, 153, 3, 3, '#999');
+    R(260, 158, 8, 2, Math.floor(performance.now() / 600) % 2 ? '#e33' : '#611');
+  } else {
+    R(205, 70, 70, 190, '#3a2618'); R(209, 74, 62, 182, '#2a1a10');
+    for (const y of [120, 165, 212]) R(209, y, 62, 4, '#a9744a');
+    R(213, 128, 14, 18, '#6a8caf'); R(232, 140, 20, 5, '#d7c9a4');
+    R(190, 72, 14, 188, '#a9744a'); R(276, 72, 14, 188, '#a9744a');
+    if (!S.cup) drawMug(224, 202, false);
+  }
+}
+
+function drawMachine(t) {
+  const sh = S.brewing ? Math.round(Math.sin(t / 30)) : 0;
+  R(291, 216, 93, 8, '#2d3338'); R(295, 224, 85, 36, '#555e66');
+  ctx.save(); ctx.translate(sh, 0);
+  R(305, 150, 60, 66, '#2f3640'); R(303, 146, 64, 8, '#1e242b'); R(309, 156, 52, 56, '#4b5563');
+  R(313, 160, 24, 11, '#0b3d0b'); ctx.font = 'bold 8px "Courier New"'; ctx.textAlign = 'left'; ctx.fillStyle = '#3f3';
+  ctx.fillText(S.brewing ? 'BREW..' : 'READY', 314, 169);
+  R(343, 161, 5, 5, '#e74c3c'); R(351, 161, 5, 5, '#f1c40f'); R(343, 169, 5, 5, '#3498db'); R(351, 169, 5, 5, '#2ecc71');
+  R(329, 178, 8, 10, '#999'); R(312, 206, 46, 5, '#888'); R(314, 211, 42, 3, '#222');
+  if (S.brewing) R(332, 188, 2, 10, '#6b3e1a');
+  if (S.cupOnMachine) drawMug(327, 196, S.brewing ? false : true);
+  ctx.restore();
+  if (S.brewing || S.cupOnMachine) for (let i = 0; i < 4; i++) {
+    const k = ((t / 40) + i * 12) % 48;
+    ctx.fillStyle = `rgba(255,255,255,${.5 - k / 100})`; ctx.fillRect(Math.round(328 + Math.sin(k / 5 + i) * 4), Math.round(194 - k), 4, 4);
+  }
+}
+
+function drawPlant() {
+  R(168, 238, 20, 22, '#b5651d'); R(166, 236, 24, 4, '#c97a30');
+  ctx.fillStyle = '#2e8b3d';
+  for (const [x, y, rx, ry] of [[178, 212, 6, 18], [168, 222, 10, 6], [188, 222, 10, 6], [178, 205, 5, 8]]) { ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, 7); ctx.fill(); }
+  R(177, 220, 2, 18, '#1d5a27');
+}
+
+function drawDesk(x, w, monX, lines, mc) {
+  R(x, 250, w, 8, '#caa472'); R(x + 4, 258, w - 8, 42, '#8d6a3c');
+  R(x + 10, 264, w - 20, 1, '#6e5128'); R(x + w / 2 - 10, 272, 20, 3, '#caa472');
+  R(monX, 214, 38, 30, '#222'); R(monX + 3, 217, 32, 24, '#0a1a2a'); R(monX + 14, 244, 10, 6, '#222');
+  lines.forEach((l, i) => R(monX + 5 + l[0], 220 + i * 4, l[1], 2, mc));
+}
+
+function drawScene(t) {
+  drawRoom(t); drawCupboard(); drawMachine(t); drawPlant();
+  for (const k of ['herbert', 'gerda']) { const p = P[k], dx = P.hero.x - p.x; p.dir = Math.abs(dx) < 40 ? 0 : Math.sign(dx); person(p, t); }
+  drawDesk(20, 140, 118, [[0, 18], [4, 12], [4, 20], [0, 8], [8, 14], [0, 16]], '#3f3');
+  drawMug(30, 240, false); R(31, 241, 10, 2, '#6b3e1a');
+  drawDesk(480, 145, 482, [[0, 14], [3, 20], [3, 10], [0, 18], [6, 12], [0, 14]], '#f5a');
+  person(P.hero, t);
+}
+
+let last = performance.now();
+function frame(t) {
+  const dt = Math.min(.05, (t - last) / 1000); last = t;
+  const h = P.hero;
+  if (h.target) {
+    const dx = h.target.x - h.x, dy = h.target.y - h.y, d = Math.hypot(dx, dy), step = 150 * dt;
+    if (d <= step) { h.x = h.target.x; h.y = h.target.y; const r = h.target.res; h.target = null; h.walk = 0; r(); }
+    else { h.x += dx / d * step; h.y += dy / d * step; if (Math.abs(dx) > 2) h.dir = dx > 0 ? 1 : -1; h.walk += dt * 10; }
+  }
+  drawScene(t);
+  requestAnimationFrame(frame);
+}
+refreshUI();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

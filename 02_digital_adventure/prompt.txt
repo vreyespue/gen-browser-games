@@ -1,0 +1,10 @@
+1>I want to create using html and js a small monke island like adventure. It should contain just a single room, one female developer is the
+  main character. She wants to drink a coffee, for that she has to resolve a small puzzle. There are two other devs in the room, one older
+  male and one older female. It should be really funny like in monkey island. The older male dev knows the code to open the cupboard, note
+  that the protagonist needs a cup in order to drink the coffee. However, the older male will not just tell the code, he will say: the code
+  is the best supermarket in germany + the number of years the company is -> therefore the code is "REWE100" (which she needs to write in
+  order to open the cupboard). Further, she needs oat milk, which is owned by the older female dev. In exchange for the oat milk, the dev
+  has to resolve a small puzzle, just think of something fun. When the protagonist has both the cup and the oat milk, she can go to the
+  coffee machine and make a nice coffee. Note that the game should feel like monkey island, i.e. she should select commands like "talk to",
+  "go to", etc.
+  
