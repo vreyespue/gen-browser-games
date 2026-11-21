@@ -120,7 +120,7 @@ function say(who, text) {
     beep(p.style === 'herbert' ? 110 : p.style === 'gerda' ? 260 : 330, .06, 'triangle', .06);
     const done = () => { clearTimeout(speechTimer); el.style.display = 'none'; p.talk = false; speechRes = null; res(); };
     speechRes = done;
-    speechTimer = setTimeout(done, Math.max(1500, 700 + text.length * 55));
+    speechTimer = setTimeout(done, Math.max(1500, 700 + text.length * 65));
   });
 }
 const L = t => say('hero', t), H = t => say('herbert', t), G = t => say('gerda', t);
@@ -222,7 +222,7 @@ def({ id: 'tree', name: 'Christmas tree', rect: [160, 162, 42, 100], stand: [186
 });
 
 def({ id: 'window', name: 'window', rect: [34, 50, 112, 96], stand: [90, 316], cx: 90,
-  look: async () => L("Outside: grey sky, a parking lot and a seagull stealing fries. Weather: 'Grey, with a chance of grey'."),
+  look: async () => L("Outside: a parking lot, snow is turning into cold moody water. Weather: 'Grey, with a chance of grey. 100% chance of wet feet'."),
   open: async () => L("Painted shut. In 1998. By someone who really hated fresh air."),
 });
 
@@ -293,18 +293,22 @@ async function tryCupboard() {
   const raw = await ask('KEYPAD - ENTER CODE:', '(letters AND numbers accepted. Welcome to 2009.)');
   if (raw === null) return L("On second thought, I should think about this code a bit more.");
   const c = raw.toUpperCase().replace(/\s+/g, '');
-  if (c === 'REWE100') {
+  if ((c === 'DEBIAN1993') || (c === 'DEBIAN1994')) {
     S.open = true; jingle([392, 523, 659, 784]);
     await sleep(300);
-    return L("Click! The cupboard opens with a creak older than our codebase. There's a cup in there!");
+    return L("Click! It opens with a creak older than our codebase. There's only a cup in there! I think these people do not have all their cups in the cupboard.");
   }
   beep(120, .4, 'sawtooth', .07);
   if (c === '1234' || c === '0000') return L("The keypad beeps: 'Even Herbert isn't that lazy.'");
   if (c === 'PASSWORD') return L("The keypad beeps: 'Herbert is old school, not THAT old school.'");
-  if (c === 'REWE') return L("The keypad beeps: 'Right supermarket. Needs more years.'");
-  if (/^\d+$/.test(c)) return L("The keypad beeps: 'Needs more supermarket.'");
-  if (/^(ALDI|LIDL|EDEKA|KAUFLAND|PENNY|NETTO)/.test(c)) return L("The keypad beeps: 'WRONG DISCOUNTER. Herbert would disown you.'");
-  if (c.startsWith('REWE')) return L("Right supermarket, wrong age. The company isn't THAT young. Or old.");
+  if (c === 'DEBIAN') return L("The keypad beeps: 'Right distro. Needs more years.'");
+  if (/^\d+$/.test(c)) return L("The keypad beeps: 'Needs more distro.'");
+  if (/^(ARCH|GENTOO)/.test(c)) return L("The keypad beeps: 'Let me guess, you also tell people you use it. Herbert would disown you.'");
+  if (/^(UBUNTU|MINT)/.test(c)) return L("The keypad beeps: 'Nice try. That's the right one with a nicer wallpaper. Herbert wants the original.'");
+  if (/^(FEDORA|REDHAT|RHEL|CENTOS)/.test(c)) return L("The keypad beeps: 'Wrong hat. Herbert only wears the swirl.'");
+  if (/^(SUSE|OPENSUSE)/.test(c)) return L("The keypad beeps: 'German engineering used to be flawless and punctual, now see the Deutsche Bahn. Wrong one.'");
+  if (/^(SLACKWARE|NIXOS|WINDOWS|MACOS)/.test(c)) return L("The keypad beeps: 'That's not a distro, that's a lifestyle choice.'");
+  if (c.startsWith('DEBIAN')) return L("Right distro, wrong year. Debian is old, but not THAT old. Or young.");
   return L(rnd(["Access denied. The keypad beeps judgmentally.", "Wrong. The keypad sighs audibly. Keypads can do that, apparently.", "Nope. Maybe I should ask Herbert instead of guessing."]));
 }
 
@@ -313,7 +317,7 @@ async function talkHerbert() {
   else await H("Back again? Be quick, my compile is in a delicate phase.");
   while (true) {
     const o = [];
-    if (!S.heardCode) o.push({ id: 'code', t: "Herbert, do you know the code for the cupboard?" });
+    if (!S.heardCode) o.push({ id: 'code', t: "Herbert, I need a cup. Do you know the code for the cupboard?" });
     else {
       o.push({ id: 'rep', t: "Could you repeat the hint?" });
       if (!S.gaveHelp) o.push({ id: 'help', t: "That's not helpful. I need more, Herbert." });
@@ -329,17 +333,17 @@ async function talkHerbert() {
       await H("Ah, the cupboard. Guardian of the cups. Yes. I set the code myself, in 2009.");
       await L("Great! What is it?");
       await H("Oh, I won't just TELL you. That would be insecure. Listen carefully, young one:");
-      await H("The code is the best supermarket in Germany, plus the number of years the company is.");
+      await H("The code is the name of Murdock's popular Linux distro, plus the year of its initial release.");
       await L("...That's the hint?");
       await H("That's the hint. I won't say it twice. Well, I will, but I'll sigh.");
     } else if (c === 'rep') {
-      await H(S.gaveHelp ? "Best supermarket in Germany. Years of the company. No spaces. I'm sighing now." : "The best supermarket in Germany, plus the number of years the company is. *sigh*");
+      await H(S.gaveHelp ? "Murdock's distro, six letters. Year of its first release, four digits. No spaces. I'm sighing now." : "Murdock's popular Linux distro, six letters. Plus the year of its initial release, four digits. No spaces. *sigh*");
     } else if (c === 'help') {
       S.gaveHelp = true;
       await L("Herbert, I have a deadline. A deadline of COFFEE.");
-      await H("Hmm. Fine. The supermarket: four letters. Capitals, naturally. We are not savages.");
-      await L("And the years?");
-      await H("The company hangs a giant banner above your head every day. Look up. Literally.");
+      await H("Hmm. Fine. The Murdock's distro: six letters. Capitals, naturally. We are not savages. And no, it's not Ubuntu. Nobody asked.");
+      await L("And the year?");
+      await H("Four digits. The early nineties, when Linux was still a cool hobby and nobody had a mascot argument yet.");
       await L("And no spaces, I guess.");
       await H("Now you're getting it. Almost like a real developer.");
     } else if (c === 'riddle') {
