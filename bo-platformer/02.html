@@ -456,7 +456,10 @@
         const name = fruitNames[Math.floor(Math.random() * fruitNames.length)];
         fruit.name = name;
         fruit.img = fruitImages[name];
-        punky.speed = name === "pineapple" || name === "strawberry" ? 3 : 7;
+        punky.speed =
+          name === "apple" || name === "cherry" || name === "strawberry"
+            ? 3
+            : 7;
 
         function candidate() {
           const platform =
