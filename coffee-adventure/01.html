@@ -94,7 +94,7 @@ const jingle = notes => notes.forEach((n, i) => beep(n, .15, 'square', .06, i * 
 $('sound').onclick = () => { soundOn = !soundOn; $('sound').textContent = soundOn ? '🔊' : '🔇'; };
 
 /* ---------- state ---------- */
-const S = { open: false, cup: false, milk: false, heardCode: false, gaveHelp: false, heardRiddle: false,
+const S = { open: false, cup: false, milk: false, heardCode: false, gaveHelp: false, repCount: 0, heardRiddle: false,
   solved: false, wrong: 0, metH: false, metG: false, brewing: false, cupOnMachine: false, done: false };
 const inv = [];
 const has = id => inv.includes(id);
@@ -337,7 +337,8 @@ async function talkHerbert() {
       await L("...That's the hint?");
       await H("That's the hint. I won't say it twice. Well, I will, but I'll sigh.");
     } else if (c === 'rep') {
-      await H(S.gaveHelp ? "Murdock's distro, six letters. Year of its first release, four digits. No spaces. I'm sighing now." : "Murdock's popular Linux distro, six letters. Plus the year of its initial release, four digits. No spaces. *sigh*");
+      const alt = S.repCount++ % 2 === 1;
+      await H(alt ? "Murdock's distro, six letters. Year of its first release, four digits. No spaces. I'm sighing now." : "Murdock's popular Linux distro, six letters. Plus the year of its initial release, four digits. No spaces. *sigh*");
     } else if (c === 'help') {
       S.gaveHelp = true;
       await L("Herbert, I have a deadline. A deadline of COFFEE.");
