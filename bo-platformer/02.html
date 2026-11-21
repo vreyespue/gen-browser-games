@@ -457,9 +457,11 @@
         fruit.name = name;
         fruit.img = fruitImages[name];
         punky.speed =
-          name === "apple" || name === "cherry" || name === "strawberry"
-            ? 3
-            : 7;
+          name === "apple"
+            ? 4
+            : name === "cherry" || name === "strawberry"
+              ? 3
+              : 7;
 
         function candidate() {
           const platform =
