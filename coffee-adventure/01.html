@@ -259,7 +259,7 @@ def({ id: 'herbert', name: 'Herbert', rect: [20, 195, 140, 105], stand: [100, 31
   open: async () => L("Open Herbert? I'm a developer, not a surgeon."),
   use: async item => item ? DEF.use(OBJ_BY.herbert, item) : L("Use Herbert? I mean... his knowledge. Let's talk instead."),
   give: async item => item === 'milk'
-    ? (await H("Oat milk? In my day milk came from a cow and we were GRATEFUL."))
+    ? (await H("Oat milk? No thanks, I like my coffee obscure and bitter like Scala."))
     : (await H("An empty cup? Thanks. Is it a metaphor for my career?")),
 });
 
