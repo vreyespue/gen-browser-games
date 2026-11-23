@@ -9,7 +9,7 @@
   #game{max-width:960px;margin:0 auto;padding:8px;box-sizing:border-box;user-select:none;-webkit-user-select:none}
   #scene{position:relative;width:100%;aspect-ratio:16/9;border:3px solid #444;background:#000;overflow:hidden;box-sizing:border-box}
   canvas{width:100%;height:100%;display:block;image-rendering:pixelated;cursor:crosshair}
-  #speech{position:absolute;transform:translate(-50%,-100%);max-width:34%;text-align:center;font-weight:bold;
+  #speech{position:absolute;transform:translate(-50%,-100%);width:max-content;max-width:34%;text-align:center;font-weight:bold;
     font-size:clamp(11px,2.4vw,22px);line-height:1.15;pointer-events:none;display:none;
     text-shadow:2px 2px 0 #000,-2px 2px 0 #000,2px -2px 0 #000,-2px -2px 0 #000,0 2px 0 #000,0 -2px 0 #000,2px 0 0 #000,-2px 0 0 #000}
   .overlay{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;
@@ -359,7 +359,7 @@ async function talkHerbert() {
   }
 }
 
-const RIDDLE = "I have keys but open no doors. I have space but no room. You can enter, but never leave. What am I?";
+const RIDDLE = "I have keys but open no doors. I have space but no room. You can enter, but never leave... What am I?";
 async function talkGerda() {
   if (S.milk) {
     await G("Oh, it's you. You still have my milk. You owe me nothing. Except silence about the intern.");
